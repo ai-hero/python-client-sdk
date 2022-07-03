@@ -23,8 +23,11 @@ class Api:
 
         self._server_url = server_url or PRODUCTION_URL
 
-    def endpoint(self, *args):
+    def ping_endpoint(self, *args):
         return f"{self._server_url}/{'/'.join(args)}"
+
+    def endpoint(self, *args):
+        return f"{self._server_url}/api/{'/'.join(args)}"
 
     def get(self, path, error_msg=None):
         with httpx.Client() as client:

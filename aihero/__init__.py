@@ -12,6 +12,6 @@ class Client:
 
     def ping(self):
         return self._api.get(
-            self._api.endpoint("ping"),
+            self._api.ping_endpoint(),
             error_msg=f"Could not connect to the server {self._server_url}",
         )
