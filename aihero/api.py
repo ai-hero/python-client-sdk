@@ -23,8 +23,8 @@ class Api:
 
         self._server_url = server_url or PRODUCTION_URL
 
-    def ping_endpoint(self, *args):
-        return f"{self._server_url}/{'/'.join(args)}"
+    def ping_endpoint(self):
+        return f"{self._server_url}/ping"
 
     def endpoint(self, *args):
         return f"{self._server_url}/api/{'/'.join(args)}"
