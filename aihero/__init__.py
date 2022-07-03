@@ -6,9 +6,9 @@ from .exceptions import AIHeroException
 class Client:
     """Main sync client class to talk to AI Hero"""
 
-    def __init__(self, api_key, server_url=None):
+    def __init__(self, api_key=None, server_url=None):
         self._server_url = server_url
-        self._api = Api(api_key, server_url=server_url)
+        self._api = Api(api_key=api_key, server_url=server_url)
 
     def ping(self):
         return self._api.get(
