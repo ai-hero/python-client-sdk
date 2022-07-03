@@ -19,13 +19,11 @@ class Automation:
             },
         )
 
-    def predict(self, obj):
+    def infer(self, task, obj):
         return self._api.post(
-            self._api.endpoint(
-                "automations", self._automation_id, "inferences", "predict"
-            ),
+            self._api.endpoint("automations", self._automation_id, "inferences", task),
             obj,
-            error_msg="Unknown error in predict.",
+            error_msg=f"Unknown error in {task}.",
             network_errors={
                 400: f"Please check the data uploaded.",
                 403: f"Could not connect to automation {self._automation_id}. Please check the API key.",
