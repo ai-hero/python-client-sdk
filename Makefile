@@ -1,5 +1,5 @@
 clean:
-	rm -rf aihero.egg-info build dist
+	rm -rf aihero.egg-info build dist aihero/__pycache__
 
 .PHONY: build
 build: clean
