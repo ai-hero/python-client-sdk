@@ -26,5 +26,8 @@ prediction = automation.predict(text="This works great!")
 # predction object:
 # {'explanation': 'The sentiment is positive', 'tags': {'negative': 0.00013113021850585938, 'positive': 0.9998688697814941}}
 
+# Add more data to your trained model.
+automation.add(text="It's great that I can add an example to the model.", guid="<SHARED_ID_FOR_TRACKING_DATA>")
+
 ```
 
