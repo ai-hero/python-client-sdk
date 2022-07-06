@@ -4,12 +4,13 @@
 With [AI Hero](https://aihero.studio), you can protototype ML models to power your product features, automate routine tasks, and analyze customer feedback - all with a simple, no-code, self-serve platform. Choose from our growing list of automations to tag text, recommend products, tag images, detect customer sentiment, and other tasks!
 
 ## Usage
-1. First, create an account on the [AI Hero Platform](https://api.aihero.studio)
+1. First, create an account on the [AI Hero Platform](https://api.aihero.studio).
 2. Create an automation and train it. 
-3. Create an API Key.
-4. Install this library
+3. Create an API Key on the platform (from the menu on the left when inside your automation).
+4. Install this library.
 5. Start using it:
-```
+
+```python
 from aihero import Client
 
 # Create the client, which connects to AI Hero server.
