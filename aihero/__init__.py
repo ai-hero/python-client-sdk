@@ -7,6 +7,7 @@ from .tag_short_text import TagShortText
 from .tag_entire_images import TagEntireImages
 from .user_recommendation import UserRecommendation
 from .item_recommendation import ItemRecommendation
+from .workspace import Workspace
 
 
 class Client:
@@ -20,8 +21,8 @@ class Client:
         "user_recommendation": UserRecommendation,
     }
 
-    def __init__(self, api_key=None, server_url=None):
-        self._api = Api(api_key=api_key, server_url=server_url)
+    def __init__(self, server_url=None):
+        self._api = Api(server_url=server_url)
 
     def ping(self):
         return self._api.get(
@@ -45,3 +46,14 @@ class Client:
             automation_id=automation_id, api=automation_api
         )
         return automation
+
+    def request_auth_secret(self, email):
+        path = f"{self._api.endpoint('users', 'auth_secret')}?email={email}"
+        self._api.get(path)
+
+    def get_workspace(self, auth_secret):
+        workspace = Workspace(
+            api=Api(auth_secret=auth_secret, server_url=self._api.server_url),
+        )
+        _ = workspace.get_automations()
+        return workspace
