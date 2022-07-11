@@ -32,8 +32,10 @@ class Api:
             "Content-Type": "application/json",
         }
         if "/workspace/" in path:
+            # Prioritize workspace auth_key
             headers["Authorization"] = self._auth_secret_authorization
-        if "/automations/" in path:
+        elif "/automations/" in path:
+            # api_key for automation
             headers["Authorization"] = self._api_key_authorization
         return headers
 
