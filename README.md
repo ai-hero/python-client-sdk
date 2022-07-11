@@ -131,7 +131,10 @@ print(automation.get_tags())
 
 3. Add the data to train the model with:
 ```python
-automation.add(text="It's great that I can add training data to the model.", guid="<SHARED_ID_FOR_TRACKING_DATA>")
+automation.add(
+    text="It's great that I can add training data to the model.", 
+    guid="<SHARED_ID_FOR_TRACKING_DATA>"
+)
 ```
 
 4. Trigger the learning:
@@ -186,7 +189,7 @@ print(automation.get_status(relearning_job))
 prediction = automation.predict(image_url="<IMAGE_URL>")
 ```
 
-# Improving your Automations
+# Improving your Automations.
 To improve the automation, teach it with feedback on how it has learned:
 ```python
 # Trigger relearn. You'll be notified when the automation is ready for review. 
@@ -201,6 +204,12 @@ Once you've been notified. Use the UI to teach the automation by giving feedback
 
 You can also add more data to train the model with:
 ```python
-automation.add(text="More data training data to the model.", guid="<SHARED_ID_FOR_TRACKING_DATA>")
+automation.add(
+    text="More data training data to the model.",
+    guid="<SHARED_ID_FOR_TRACKING_DATA>"
+)
 ```
 
+
+# Pricing.
+Please check your automation at [AI Hero Platform](https://api.aihero.studio) for pricing information to the model. 
