@@ -1,27 +1,15 @@
 from aihero.exceptions import AIHeroException
 from .api import Api
 from .exceptions import AIHeroException
-from .automation import Automation
-from .detect_sentiment import DetectSentiment
-from .tag_short_text import TagShortText
-from .tag_entire_images import TagEntireImages
-from .user_recommendation import UserRecommendation
-from .item_recommendation import ItemRecommendation
+from .automation import Automation, construct
+from .workspace import Workspace
 
 
 class Client:
     """Main sync client class to talk to AI Hero"""
 
-    automation_classes = {
-        "detect_sentiment": DetectSentiment,
-        "tag_short_text": TagShortText,
-        "tag_entire_images": TagEntireImages,
-        "item_recommendation": ItemRecommendation,
-        "user_recommendation": UserRecommendation,
-    }
-
-    def __init__(self, api_key=None, server_url=None):
-        self._api = Api(api_key=api_key, server_url=server_url)
+    def __init__(self, server_url=None):
+        self._api = Api(server_url=server_url)
 
     def ping(self):
         return self._api.get(
@@ -36,12 +24,21 @@ class Client:
         )
         automation_definition = automation.get_definition()
         automation_type = automation_definition["type"]
-        if automation_type not in Client.automation_classes:
-            raise AIHeroException(
-                f"Unsupported automation type for the API: {automation_type}"
-            )
         automation_api = Api(api_key=api_key, server_url=self._api.server_url)
-        automation = Client.automation_classes[automation_type](
-            automation_id=automation_id, api=automation_api
+        automation = construct(
+            automation_type=automation_type,
+            automation_id=automation_id,
+            automation_api=automation_api,
         )
         return automation
+
+    def request_auth_secret(self, email):
+        path = f"{self._api.endpoint('users', 'auth_secret')}?email={email}"
+        self._api.get(path)
+
+    def get_workspace(self, auth_secret):
+        workspace = Workspace(
+            api=Api(auth_secret=auth_secret, server_url=self._api.server_url),
+        )
+        _ = workspace.get_automations()
+        return workspace
