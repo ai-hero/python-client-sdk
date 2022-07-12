@@ -67,7 +67,7 @@ class Automation:
             self._api.endpoint("automations", self._automation_id, "definition"),
             error_msg="Couldn't get the definition.",
             network_errors={
-                403: "Could not connect to automation {self._automation_id}. Please check the API key."
+                403: f"Could not connect to automation {self._automation_id}. Please check the API key."
             },
         )
 
@@ -80,7 +80,7 @@ class Automation:
             error_msg="Unknown error in updating ontology.",
             network_errors={
                 400: "Please check the ontology to be updated.",
-                403: "Could not connect to automation {self._automation_id}. Please check the API key.",
+                403: f"Could not connect to automation {self._automation_id}. Please check the API key.",
             },
         )
 
@@ -91,7 +91,7 @@ class Automation:
             error_msg="Unknown error in job.",
             network_errors={
                 400: "Please check the job parameters.",
-                403: "Could not connect to automation {self._automation_id}. Please check the API key.",
+                403: f"Could not connect to automation {self._automation_id}. Please check the API key.",
             },
         )
         while True:
@@ -103,7 +103,7 @@ class Automation:
                 error_msg="Unknown error in job.",
                 network_errors={
                     400: "Please check the request.",
-                    403: "Could not connect to automation {self._automation_id}. Please check the API key.",
+                    403: f"Could not connect to automation {self._automation_id}. Please check the API key.",
                 },
             )
             if "state" not in job:
@@ -125,7 +125,7 @@ class Automation:
             error_msg="Unknown error in job.",
             network_errors={
                 400: "Please check the job parameters.",
-                403: "Could not connect to automation {self._automation_id}. Please check the API key.",
+                403: f"Could not connect to automation {self._automation_id}. Please check the API key.",
             },
         )
         return job
@@ -137,7 +137,7 @@ class Automation:
             error_msg="Unknown error in {task}.",
             network_errors={
                 400: "Please check the data uploaded.",
-                403: "Could not connect to automation {self._automation_id}. Please check the API key.",
+                403: f"Could not connect to automation {self._automation_id}. Please check the API key.",
             },
         )
 
@@ -150,6 +150,6 @@ class Automation:
             error_msg="Unknown error in job.",
             network_errors={
                 400: "Please check the request.",
-                403: "Could not connect to automation {self._automation_id}. Please check the API key.",
+                403: f"Could not connect to automation {self._automation_id}. Please check the API key.",
             },
         )
