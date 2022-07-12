@@ -20,13 +20,13 @@ aihero_client = Client()
 
 3. To create an automation, you'll need a temporary authorization key to your workspace. 
 ```python
-client.request_auth_secret(email="<YOUR_EMAIL_ADDRESS>")
+aihero_client.request_auth_secret(email="<YOUR_EMAIL_ADDRESS>")
 
 # You'll be sent a auth_key in your email. Use it to get access to your workspace. 
 # This auth_key is valid ONLY for two hours and meant as a temporary access. 
 # Once you create the automation, you'll be able to create and use an API key that will last longer.
 
-workspace = client.get_workspace(auth_secret="<AUTH_KEY_FROM_EMAIL>")
+workspace = aihero_client.get_workspace(auth_secret="<AUTH_KEY_FROM_EMAIL>")
 ```
 
 4. Next create an automation from the types available. See the next section for all types supported.
@@ -44,7 +44,7 @@ automation_id = automation["_id"]
 The next time, you can use the API key you can find on the web console to get access to the automation directly:
 ```python
 # Get the automation object, using the automation id and your API key for that automation. 
-automation = client.get_automation(automation_id='<YOUR_AUTOMATION_ID>',  api_key='<YOUR_API_KEY>')
+automation = aihero_client.get_automation(automation_id='<YOUR_AUTOMATION_ID>',  api_key='<YOUR_API_KEY>')
 ```
 
 5. Start using it:
@@ -70,10 +70,10 @@ pip install aihero
 from aihero import Client
 
 # Create the client, which connects to AI Hero server.
-client = Client()
+aihero_client = Client()
 
 # Get the automation object, using the automation id and your API key for that automation. 
-automation = client.get_automation(automation_id='<YOUR_AUTOMATION_ID>',  api_key='<YOUR_API_KEY>')
+automation = aihero_client.get_automation(automation_id='<YOUR_AUTOMATION_ID>',  api_key='<YOUR_API_KEY>')
 
 # Predict using your trained automation.
 # For example, for detecting sentiment in short text:
