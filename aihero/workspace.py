@@ -13,7 +13,7 @@ class Workspace:
             self._api.endpoint("workspace", "automations"),
             error_msg="Couldn't get the automations.",
             network_errors={
-                403: f"Could not connect to workspace. Please check the auth_secret."
+                403: "Could not connect to workspace. Please check the auth_secret."
             },
         )
 
@@ -35,7 +35,7 @@ class Workspace:
             obj=obj,
             error_msg="Couldn't create the automation api_key.",
             network_errors={
-                403: f"Could not create api key. Please check the auth_secret."
+                403: "Could not create api key. Please check the auth_secret."
             },
         )
         return self.get_automation(automation["_id"])
@@ -45,7 +45,7 @@ class Workspace:
             self._api.endpoint("workspace", "automations", automation_id, "api_keys"),
             error_msg="Couldn't get the automation api_key.",
             network_errors={
-                403: f"Could not get api key. Please check the auth_secret."
+                403: "Could not get api key. Please check the auth_secret."
             },
         )
         if not api_keys:
@@ -59,7 +59,7 @@ class Workspace:
                 obj={},
                 error_msg="Couldn't create the automation api_key.",
                 network_errors={
-                    403: f"Could not create api key. Please check the auth_secret."
+                    403: "Could not create api key. Please check the auth_secret."
                 },
             )
             api_keys = self._api.get(
@@ -68,7 +68,7 @@ class Workspace:
                 ),
                 error_msg="Couldn't get the automation api_key.",
                 network_errors={
-                    403: f"Could not get api key. Please check the auth_secret."
+                    403: "Could not get api key. Please check the auth_secret."
                 },
             )
         api_key = api_keys[0]["key"]

@@ -14,7 +14,7 @@ class Client:
     def ping(self):
         return self._api.get(
             self._api.ping_endpoint(),
-            error_msg=f"Could not connect to the server {self._api.server_url}",
+            error_msg="Could not connect to the server {self._api.server_url}",
         )
 
     def get_automation(self, automation_id, api_key):

@@ -1,7 +1,4 @@
-import platform
 import httpx
-import urllib.parse
-
 from .exceptions import AIHeroException
 
 PRODUCTION_URL = "https://api.aihero.studio"
@@ -55,11 +52,13 @@ class Api:
                 raise AIHeroException(
                     f"{network_errors[exc.response.status_code]}",
                     status_code=exc.response.status_code,
-                )
+                ) from exc
             elif exc.response.status_code:
-                raise AIHeroException(error_msg, status_code=exc.response.status_code)
+                raise AIHeroException(
+                    error_msg, status_code=exc.response.status_code
+                ) from exc
             else:
-                raise AIHeroException(error_msg)
+                raise AIHeroException(error_msg) from exc
         return response.json()
 
     def post(self, path, obj, error_msg=None, network_errors=None):
@@ -72,9 +71,11 @@ class Api:
                 raise AIHeroException(
                     f"{network_errors[exc.response.status_code]}",
                     status_code=exc.response.status_code,
-                )
+                ) from exc
             elif exc.response.status_code:
-                raise AIHeroException(error_msg, status_code=exc.response.status_code)
+                raise AIHeroException(
+                    error_msg, status_code=exc.response.status_code
+                ) from exc
             else:
-                raise AIHeroException(error_msg)
+                raise AIHeroException(error_msg) from exc
         return response.json()
