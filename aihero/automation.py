@@ -24,8 +24,9 @@ AUTOMATION_TYPES = [
     "detect_sentiment",
     "tag_short_text",
     "tag_entire_images",
-    "item_recommendation",
-    "user_recommendation",
+    "recommend_items_to_people",
+    "recommend_people_to_each_other",
+    "recommend_people_from_two_groups_to_each_other",
 ]
 
 
@@ -33,15 +34,19 @@ def construct(automation_type, automation_id, automation_api):
     from .detect_sentiment import DetectSentiment
     from .tag_short_text import TagShortText
     from .tag_entire_images import TagEntireImages
-    from .user_recommendation import UserRecommendation
-    from .item_recommendation import ItemRecommendation
+    from .recommend_people_to_each_other import RecommendPeopleToEachOther
+    from .recommend_people_from_two_groups_to_each_other import (
+        RecommendPeopleFromTwoGroupsToEachOther,
+    )
+    from .recommend_items_to_people import RecommendItemsToPeople
 
     AUTOMATION_CLASSES = {
         "detect_sentiment": DetectSentiment,
         "tag_short_text": TagShortText,
         "tag_entire_images": TagEntireImages,
-        "item_recommendation": ItemRecommendation,
-        "user_recommendation": UserRecommendation,
+        "recommend_items_to_people": RecommendItemsToPeople,
+        "recommend_people_to_each_other": RecommendPeopleToEachOther,
+        "recommend_people_from_two_groups_to_each_other": RecommendPeopleFromTwoGroupsToEachOther,
     }
 
     if automation_type not in AUTOMATION_CLASSES:

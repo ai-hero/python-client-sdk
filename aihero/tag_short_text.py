@@ -46,7 +46,7 @@ class TagShortText(Automation):
             )
 
         return super()._sync_job(
-            {"type": "ingest_row", "row": {"text": text, "guid": guid}}
+            {"type": "add_short_text", "row": {"text": text, "guid": guid}}
         )
 
     def predict(self, text):
