@@ -1,6 +1,4 @@
-from aihero.exceptions import AIHeroException
 from .api import Api
-from .exceptions import AIHeroException
 from .automation import Automation, construct
 from .workspace import Workspace
 

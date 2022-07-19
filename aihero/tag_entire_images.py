@@ -47,7 +47,7 @@ class TagEntireImages(Automation):
 
         return super()._sync_job(
             {
-                "type": "ingest_row",
+                "type": "add_image",
                 "row": {
                     "image": {"type": "url_pointer", "url": image_url},
                     "guid": guid,

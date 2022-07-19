@@ -2,8 +2,8 @@ from .automation import Automation
 from .exceptions import AIHeroException
 
 
-class ItemRecommendation(Automation):
-    def add(self, item, guid):
+class RecommendItemsToPeople(Automation):
+    def add_item(self, item, guid):
         if item is None or len(item) == 0:
             raise AIHeroException(
                 "You need to provide the image to teach the automation with."
@@ -14,7 +14,7 @@ class ItemRecommendation(Automation):
             )
 
         item["guid"] = guid
-        return super()._sync_job({"type": "ingest_row", "row": item})
+        return super()._sync_job({"type": "add_item", "row": item})
 
     def get_recommendations(self, item_id):
         if item_id is None or item_id.strip() == "":
