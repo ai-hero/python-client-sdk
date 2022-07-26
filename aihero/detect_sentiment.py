@@ -1,23 +1,25 @@
 from .automation import Automation
-from .exceptions import AIHeroException
 
 
 class DetectSentiment(Automation):
-    def add(self, text, guid):
-        if text is None or text.strip() == "":
-            raise AIHeroException(
-                "You need to provide the text to teach the automation with."
-            )
-        if guid is None or guid.strip() == "":
-            raise AIHeroException(
-                "You need to provide the guid to teach the automation with."
-            )
-
+    def add_short_text(self, guid: str, text: str) -> dict:
+        assert text is not None
+        assert guid is not None
         return super()._sync_job(
             {"type": "add_short_text", "row": {"text": text, "guid": guid}}
         )
 
-    def predict(self, text):
-        if text is None or text.strip() == "":
-            raise AIHeroException("text cannot be null or empty.")
-        return super()._infer("predict", {"text": text})
+    def predict(self, guid: str, text: str) -> dict:
+        assert text is not None
+        assert guid is not None
+        return super()._infer("predict", {"text": text, "guid": guid})
+
+    def set_ground_truth(self, guid: str, ground_truth: dict[str, bool]) -> dict:
+        assert guid is not None
+        return super()._sync_job(
+            {
+                "type": "set_ground_truth",
+                "guid": guid,
+                "ground_truth": ground_truth,
+            }
+        )

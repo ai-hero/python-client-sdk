@@ -1,7 +1,7 @@
 class AIHeroException(Exception):
     """Generic AI Hero exception class"""
 
-    def __init__(self, message, status_code=None):
+    def __init__(self, message: str, status_code: int = None) -> Exception:
         if not message:
             message = type(self).__name__
 

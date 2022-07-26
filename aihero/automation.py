@@ -1,6 +1,6 @@
+from .api import Api
 from .exceptions import AIHeroException
 from time import sleep
-
 
 COLORS = [
     "red",
@@ -30,34 +30,6 @@ AUTOMATION_TYPES = [
 ]
 
 
-def construct(automation_type, automation_id, automation_api):
-    from .detect_sentiment import DetectSentiment
-    from .tag_short_text import TagShortText
-    from .tag_entire_images import TagEntireImages
-    from .recommend_people_to_each_other import RecommendPeopleToEachOther
-    from .recommend_people_from_two_groups_to_each_other import (
-        RecommendPeopleFromTwoGroupsToEachOther,
-    )
-    from .recommend_items_to_people import RecommendItemsToPeople
-
-    AUTOMATION_CLASSES = {
-        "detect_sentiment": DetectSentiment,
-        "tag_short_text": TagShortText,
-        "tag_entire_images": TagEntireImages,
-        "recommend_items_to_people": RecommendItemsToPeople,
-        "recommend_people_to_each_other": RecommendPeopleToEachOther,
-        "recommend_people_from_two_groups_to_each_other": RecommendPeopleFromTwoGroupsToEachOther,
-    }
-
-    if automation_type not in AUTOMATION_CLASSES:
-        raise AIHeroException(
-            f"Unsupported automation type for the API: {automation_type}"
-        )
-    return AUTOMATION_CLASSES[automation_type](
-        automation_id=automation_id, api=automation_api
-    )
-
-
 class Automation:
     """Abstraction for automation operations"""
 
@@ -67,7 +39,7 @@ class Automation:
         self._api = api
         self._automation_id = automation_id
 
-    def get_definition(self):
+    def get_definition(self) -> dict:
         return self._api.get(
             self._api.endpoint("automations", self._automation_id, "definition"),
             error_msg="Couldn't get the definition.",
@@ -76,7 +48,7 @@ class Automation:
             },
         )
 
-    def update_ontology(self, ontology):
+    def update_ontology(self, ontology: list) -> dict:
         return self._api.post(
             self._api.endpoint(
                 "automations", self._automation_id, "definition", "ontology"
@@ -89,7 +61,7 @@ class Automation:
             },
         )
 
-    def _sync_job(self, job):
+    def _sync_job(self, job: dict):
         job = self._api.post(
             self._api.endpoint("automations", self._automation_id, "jobs"),
             job,
@@ -123,7 +95,7 @@ class Automation:
             elif state in ["done"]:
                 break
 
-    def _async_job(self, job):
+    def _async_job(self, job: dict) -> dict:
         job = self._api.post(
             self._api.endpoint("automations", self._automation_id, "jobs"),
             job,
@@ -135,7 +107,7 @@ class Automation:
         )
         return job
 
-    def _infer(self, task, obj):
+    def _infer(self, task: str, obj: dict) -> dict:
         return self._api.post(
             self._api.endpoint("automations", self._automation_id, "inferences", task),
             obj,
@@ -146,10 +118,10 @@ class Automation:
             },
         )
 
-    def relearn(self):
-        return self._async_job({"type": "relearn"})
+    def understand(self) -> dict:
+        return self._async_job({"type": "understand"})
 
-    def get_job(self, job):
+    def get_job(self, job) -> dict:
         return self._api.get(
             self._api.endpoint("automations", self._automation_id, "jobs", job["_id"]),
             error_msg="Unknown error in job.",
@@ -158,3 +130,33 @@ class Automation:
                 403: f"Could not connect to automation {self._automation_id}. Please check the API key.",
             },
         )
+
+
+def construct(
+    automation_type: str, automation_id: str, automation_api: Api
+) -> Automation:
+    from .detect_sentiment import DetectSentiment
+    from .tag_short_text import TagShortText
+    from .tag_entire_images import TagEntireImages
+    from .recommend_people_to_each_other import RecommendPeopleToEachOther
+    from .recommend_people_from_two_groups_to_each_other import (
+        RecommendPeopleFromTwoGroupsToEachOther,
+    )
+    from .recommend_items_to_people import RecommendItemsToPeople
+
+    AUTOMATION_CLASSES = {
+        "detect_sentiment": DetectSentiment,
+        "tag_short_text": TagShortText,
+        "tag_entire_images": TagEntireImages,
+        "recommend_items_to_people": RecommendItemsToPeople,
+        "recommend_people_to_each_other": RecommendPeopleToEachOther,
+        "recommend_people_from_two_groups_to_each_other": RecommendPeopleFromTwoGroupsToEachOther,
+    }
+
+    if automation_type not in AUTOMATION_CLASSES:
+        raise AIHeroException(
+            f"Unsupported automation type for the API: {automation_type}"
+        )
+    return AUTOMATION_CLASSES[automation_type](
+        automation_id=automation_id, api=automation_api
+    )

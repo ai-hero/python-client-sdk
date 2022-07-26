@@ -1,22 +1,54 @@
 from .automation import Automation
-from .exceptions import AIHeroException
 
 
 class RecommendPeopleToEachOther(Automation):
-    def add_person(self, person, guid):
-        if person is None or len(person) == 0:
-            raise AIHeroException(
-                "You need to provide the image to teach the automation with."
-            )
-        if guid is None or guid.strip() == "":
-            raise AIHeroException(
-                "You need to provide the guid to teach the automation with."
-            )
-
+    def add_person(self, person: dict, guid: str) -> dict:
+        assert person is not None
+        assert guid is not None
         person["guid"] = guid
         return super()._sync_job({"type": "add_person", "row": person})
 
-    def get_recommendations(self, person_id):
-        if person_id is None or person_id.strip() == "":
-            raise AIHeroException("person_id cannot be null or empty.")
-        return super()._infer("get_recommendations", {"thing_id": person_id})
+    def add_action(
+        self,
+        person_guid: str,
+        item_guid: str,
+        action_type: str,
+        session_id: str = None,
+        timestamp: int = None,
+        duration: float = None,
+        rating: float = None,
+    ) -> dict:
+        assert person_guid is not None
+        assert item_guid is not None
+        assert action_type is not None
+        return super()._sync_job(
+            {
+                "type": "add_action",
+                "action": {
+                    "person_guid": person_guid,
+                    "item_guid": item_guid,
+                    "action_type": action_type,
+                    "session_id": session_id,
+                    "timestamp": timestamp,
+                    "duration": duration,
+                    "rating": rating,
+                },
+            }
+        )
+
+    def add_preference(self, person_guid: str, preference: list) -> dict:
+        assert person_guid is not None
+        assert preference is not None
+        return super()._sync_job(
+            {
+                "type": "add_preference",
+                "action": {
+                    "person_guid": person_guid,
+                    "preference": preference,
+                },
+            }
+        )
+
+    def get_recommendations(self, guid: str) -> dict:
+        assert guid is not None
+        return super()._infer("get_recommendations", {"guid": guid})
