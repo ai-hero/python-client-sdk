@@ -2,17 +2,17 @@ from .automation import Automation
 
 
 class RecommendPeopleFromTwoGroupsToEachOther(Automation):
-    def add_person_to_group_one(self, person: dict, guid: str) -> dict:
+    def add_person_to_group_one(self, guid: str, person: dict) -> dict:
         assert person is not None
         assert guid is not None
         person["guid"] = guid
-        return super()._sync_job({"type": "add_person_to_group_one", "row": person})
+        return super()._sync_job({"type": "add_person_to_group_one", "person": person})
 
-    def add_person_to_group_two(self, person: dict, guid: str) -> dict:
+    def add_person_to_group_two(self, guid: str, person: dict) -> dict:
         assert person is not None
         assert guid is not None
         person["guid"] = guid
-        return super()._sync_job({"type": "add_person_to_group_two", "row": person})
+        return super()._sync_job({"type": "add_person_to_group_two", "person": person})
 
     def add_action(
         self,
@@ -55,6 +55,11 @@ class RecommendPeopleFromTwoGroupsToEachOther(Automation):
             }
         )
 
-    def get_recommendations(self, guid: str) -> dict:
-        assert guid is not None
-        return super()._infer("get_recommendations", {"guid": guid})
+    def get_recommendations(self, person_guid: str) -> dict:
+        assert person_guid is not None
+        return super()._sync_job(
+            {
+                "type": "get_recommendations",
+                "person": {"guid": person_guid},
+            }
+        )

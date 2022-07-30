@@ -2,11 +2,11 @@ from .automation import Automation
 
 
 class RecommendPeopleToEachOther(Automation):
-    def add_person(self, person: dict, guid: str) -> dict:
+    def add_person(self, guid: str, person: dict) -> dict:
         assert person is not None
         assert guid is not None
         person["guid"] = guid
-        return super()._sync_job({"type": "add_person", "row": person})
+        return super()._sync_job({"type": "add_person", "person": person})
 
     def add_action(
         self,
@@ -49,6 +49,11 @@ class RecommendPeopleToEachOther(Automation):
             }
         )
 
-    def get_recommendations(self, guid: str) -> dict:
-        assert guid is not None
-        return super()._infer("get_recommendations", {"guid": guid})
+    def get_recommendations(self, person_guid: str) -> dict:
+        assert person_guid is not None
+        return super()._sync_job(
+            {
+                "type": "get_recommendations",
+                "person": {"guid": person_guid},
+            }
+        )

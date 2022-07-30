@@ -93,7 +93,7 @@ class Automation:
             elif state == "error":
                 raise AIHeroException("Error while uploading data")
             elif state in ["done"]:
-                break
+                return job
 
     def _async_job(self, job: dict) -> dict:
         job = self._api.post(
@@ -107,16 +107,9 @@ class Automation:
         )
         return job
 
-    def _infer(self, task: str, obj: dict) -> dict:
-        return self._api.post(
-            self._api.endpoint("automations", self._automation_id, "inferences", task),
-            obj,
-            error_msg="Unknown error in {task}.",
-            network_errors={
-                400: "Please check the data uploaded.",
-                403: f"Could not connect to automation {self._automation_id}. Please check the API key.",
-            },
-        )
+    def _infer(self, job: dict) -> dict:
+        job = self._sync_job(job)
+        return job["result"]
 
     def understand(self) -> dict:
         return self._async_job({"type": "understand"})

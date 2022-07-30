@@ -9,7 +9,7 @@ Choose from our growing list of automations to tag text, recommend products, tag
 
 # Usage
 
-## Creating an Automation with this Python API.
+## Using an automation created on the [AI Hero Platform](https://api.aihero.studio) with this Python API.
 
 1. First, install this library.
 ```shell

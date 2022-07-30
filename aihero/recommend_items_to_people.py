@@ -2,17 +2,17 @@ from .automation import Automation
 
 
 class RecommendItemsToPeople(Automation):
-    def add_item(self, item: dict, guid: str) -> dict:
+    def add_item(self, guid: str, item: dict) -> dict:
         assert item is not None
         assert guid is not None
         item["guid"] = guid
-        return super()._sync_job({"type": "add_item", "row": item})
+        return super()._sync_job({"type": "add_item", "item": item})
 
-    def add_person(self, person: dict, guid: str) -> dict:
+    def add_person(self, guid: str, person: dict) -> dict:
         assert person is not None
         assert guid is not None
         person["guid"] = guid
-        return super()._sync_job({"type": "add_person", "row": person})
+        return super()._sync_job({"type": "add_person", "person": person})
 
     def add_action(
         self,
@@ -55,6 +55,13 @@ class RecommendItemsToPeople(Automation):
             }
         )
 
-    def get_recommendations(self, guid: str) -> dict:
-        assert guid is not None
-        return super()._infer("get_recommendations", {"guid": guid})
+    def get_recommendations(self, person_guid: str, item_guid: str) -> dict:
+        assert person_guid is not None
+        assert item_guid is not None
+        return super()._sync_job(
+            {
+                "type": "get_recommendations",
+                "item": {"guid": item_guid},
+                "person": {"guid": person_guid},
+            }
+        )
