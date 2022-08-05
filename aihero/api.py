@@ -7,7 +7,9 @@ PRODUCTION_URL = "https://api.aihero.studio"
 class Api:
     """Abstraction for http operations"""
 
-    def __init__(self, auth_secret=None, api_key=None, server_url=None):
+    def __init__(
+        self, auth_secret: str = None, api_key: str = None, server_url: str = None
+    ):
         if auth_secret is None or auth_secret.strip() == "":
             self._auth_secret = None  # Only works for ping for now.
         else:
@@ -24,7 +26,7 @@ class Api:
             server_url = server_url[:-1]
         self.server_url = server_url or PRODUCTION_URL
 
-    def _get_headers(self, path):
+    def _get_headers(self, path: str) -> dict:
         headers = {
             "Content-Type": "application/json",
         }
@@ -36,15 +38,17 @@ class Api:
             headers["Authorization"] = self._api_key_authorization
         return headers
 
-    def ping_endpoint(self):
+    def ping_endpoint(self) -> str:
         return f"{self.server_url}/ping"
 
-    def endpoint(self, *args):
+    def endpoint(self, *args) -> str:
         return f"{self.server_url}/api/{'/'.join(args)}"
 
-    def get(self, path, error_msg=None, network_errors=None):
+    def get(
+        self, path: str, error_msg: str = None, network_errors: dict = None
+    ) -> dict:
         with httpx.Client() as client:
-            response = client.get(path, headers=self._get_headers(path))
+            response = client.get(path, headers=self._get_headers(path), timeout=10.0)
         try:
             response.raise_for_status()
         except httpx.HTTPStatusError as exc:
@@ -61,9 +65,13 @@ class Api:
                 raise AIHeroException(error_msg) from exc
         return response.json()
 
-    def post(self, path, obj, error_msg=None, network_errors=None):
+    def post(
+        self, path: str, obj: dict, error_msg: str = None, network_errors: dict = None
+    ) -> dict:
         with httpx.Client() as client:
-            response = client.post(path, json=obj, headers=self._get_headers(path))
+            response = client.post(
+                path, json=obj, headers=self._get_headers(path), timeout=10.0
+            )
         try:
             response.raise_for_status()
         except httpx.HTTPStatusError as exc:
