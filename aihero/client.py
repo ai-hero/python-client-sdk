@@ -3,7 +3,7 @@ from .exceptions import AIHeroException
 import traceback
 
 
-PRODUCTION_URL = "https://api.aihero.studio"
+PRODUCTION_URL = "https://app.aihero.studio"
 SANDBOX_URL = "https://sandbox.aihero.studio"
 
 
@@ -13,14 +13,11 @@ class Client:
     _base_url: str = None
     _authorization: str = None
 
-    def __init__(self, bearer_token: str, server_url: str = None):
+    def __init__(self, bearer_token: str, server_url: str = PRODUCTION_URL):
         self._bearer_token = bearer_token
         self._authorization = f"Bearer {self._bearer_token}"
-
-        if server_url:
-            self._base_url = server_url
-        else:
-            self._base_url = PRODUCTION_URL
+        self._base_url = server_url
+        print(f"Connecting to {self._base_url}")
         if self._base_url.endswith("/"):
             self._base_url = self._base_url[:-1]
         self._base_url = f"{self._base_url}/api/v1"

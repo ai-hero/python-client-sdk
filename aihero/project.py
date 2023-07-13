@@ -1,11 +1,16 @@
 from .client import Client
-from .promptstash import PromptTemplate
+from .promptstash import PromptStash
 
 
 class Project:
     """Main sync client class to talk to AI Hero"""
 
-    def __init__(self, project_id: str, api_key: str, server_url: str = None):
+    def __init__(
+        self,
+        project_id: str,
+        api_key: str,
+        server_url: str = "https://app.aihero.studio",
+    ):
         self._project_id = project_id
         self._client = Client(bearer_token=api_key, server_url=server_url)
         self.get()  # check
@@ -25,5 +30,5 @@ class Project:
             print(f"Project desc:\t{project_dict['description']}")
             print(f"Created on:\t{project_dict['created_at']}")
 
-    def prompt_template(self, prompt_template_id: str):
-        return PromptTemplate(self._project_id, self._client, prompt_template_id)
+    def promptstash(self):
+        return PromptStash(self._project_id, self._client)
