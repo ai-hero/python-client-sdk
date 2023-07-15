@@ -79,9 +79,9 @@ class PromptStash:
         self,
         template_id: str,
         variant: str,
+        inputs: str,
         prompt: str,
         output: str,
-        inputs: str,
         trace_id: str = None,
         other: dict = None,
     ):
@@ -122,17 +122,18 @@ class PromptStash:
 
     def stash_completion(
         self,
+        template_id: str,
         variant: str,
+        inputs: str,
         prompt: str,
         output: str,
-        inputs: str = None,
         other: dict = None,
         trace_id: str = None,
     ):
         if has_key():
             Thread(
                 target=self._sync_stash_completion,
-                args=(variant, prompt, output, inputs, trace_id, other),
+                args=(template_id, variant, prompt, output, inputs, trace_id, other),
             ).start()
         else:
             raise AIHeroException("No OPENAI_API_KEY in env variables.")
