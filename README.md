@@ -34,7 +34,11 @@ We can stash our current prompt template to get a "variant" id. A variant id is 
 variant = ps.stash_template(template_id="paul-graham-essay", body=TEMPLATE_STR)
 ```
 
-You can see the prompt stashed in your AI Hero UI. When you want to recall the variant in the future, use the hash you want.
+You can see the prompt stashed in your AI Hero UI. 
+![Stashed Prompt Templates](assets/variants.png)
+
+
+When you want to recall the variant in the future, use the hash you want.
 ```python
 template_str = ps.variant(template_id="paul-graham-essay", variant=variant)
 ```
@@ -50,6 +54,8 @@ prompt_hash = ps.stash_completion(
 ```
 
 You can then view your stashed prompts in real-time from the UI.
+
+![Real Time View of prompts, their inputs and outputs.](assets/tsne.png)
 
 NOTE: You'll need to provide an OPENAI_API_KEY environment variable so that the client SDK can generate embeddings for your inputs and outputs. This would incur charges for OpenAI, and we recommend you set limits on your account with OpenAI.
 ```python
