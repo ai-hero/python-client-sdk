@@ -1,5 +1,5 @@
 # AI Hero Python SDK
-The AI Hero ```python SDK offers a powerful set of tools for managing and developing AI models. With our latest release, you can easily manage prompt templates and versions, allowing for easier and more effective model development, testing, and deployment.
+The AI Hero Python SDK offers a powerful set of tools for managing and developing AI models. With our latest release, you can easily manage prompt templates and versions, allowing for easier and more effective model development, testing, and deployment.
 
 ## Installation
 Install AI Hero using pip:
