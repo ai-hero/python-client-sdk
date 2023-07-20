@@ -79,10 +79,13 @@ class PromptStash:
         self,
         template_id: str,
         variant: str,
-        inputs: str,
+        trace_id: str,
+        step_id: str,
         prompt: str,
+        inputs: str,
         output: str,
-        trace_id: str = None,
+        model: dict,
+        metrics: dict,
         other: dict = None,
     ):
         inputs_embedding, err = get_embedding(inputs)
@@ -99,13 +102,19 @@ class PromptStash:
             raise AIHeroException(err)
 
         stash_obj = {
+            "trace_id": trace_id,
+            "step_id": step_id,
+            "step_type": "completion",
+            "template_id": template_id,
+            "variant": variant,
             "inputs": inputs,
             "prompt": prompt,
             "output": output,
             "inputs_embedding": inputs_embedding,
             "prompt_embedding": prompt_embedding,
             "output_embedding": output_embedding,
-            "trace_id": trace_id,
+            "model": model,
+            "metrics": metrics,
         }
 
         if other is None:
@@ -114,7 +123,7 @@ class PromptStash:
         stash_obj["other"] = other
 
         self._client.post(
-            f"/tools/promptstash/projects/{self._project_id}/prompt_templates/{template_id}/variants/{variant}/stash",
+            f"/tools/promptstash/projects/{self._project_id}/stash",
             obj=stash_obj,
             timeout=30,
         )
@@ -124,16 +133,85 @@ class PromptStash:
         self,
         template_id: str,
         variant: str,
-        inputs: str,
+        trace_id: str,
+        step_id: str,
         prompt: str,
+        inputs: str,
         output: str,
+        model: dict,
+        metrics: dict,
         other: dict = None,
-        trace_id: str = None,
     ):
         if has_key():
             Thread(
                 target=self._sync_stash_completion,
-                args=(template_id, variant, prompt, output, inputs, trace_id, other),
+                args=(
+                    template_id,
+                    variant,
+                    trace_id,
+                    step_id,
+                    prompt,
+                    inputs,
+                    output,
+                    model,
+                    metrics,
+                    other,
+                ),
+            ).start()
+        else:
+            raise AIHeroException("No OPENAI_API_KEY in env variables.")
+
+    def _sync_stash_feedback(
+        self,
+        trace_id: str,
+        step_id: str,
+        thumbs_up: bool,
+        thumbs_down: bool,
+        correction: str,
+        annotations: dict,
+        other: dict = None,
+    ):
+        stash_obj = {
+            "trace_id": trace_id,
+            "step_id": step_id,
+            "step_type": "feedback",
+            "thumbs_up": thumbs_up,
+            "thumbs_down": thumbs_down,
+            "correction": correction,
+            "annotations": annotations,
+        }
+        if other is None:
+            other = {}
+        stash_obj["other"] = other
+        self._client.post(
+            f"/tools/promptstash/projects/{self._project_id}/stash",
+            obj=stash_obj,
+            timeout=30,
+        )
+        print("Feedback stashed.")
+
+    def stash_feedback(
+        self,
+        trace_id: str,
+        step_id: str,
+        thumbs_up: bool,
+        thumbs_down: bool,
+        correction: str,
+        annotations: dict,
+        other: dict = None,
+    ):
+        if has_key():
+            Thread(
+                target=self._sync_stash_feedback,
+                args=(
+                    trace_id,
+                    step_id,
+                    thumbs_up,
+                    thumbs_down,
+                    correction,
+                    annotations,
+                    other,
+                ),
             ).start()
         else:
             raise AIHeroException("No OPENAI_API_KEY in env variables.")
