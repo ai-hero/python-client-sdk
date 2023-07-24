@@ -87,6 +87,12 @@ You can create a test suite and then test the outputs of your variant with it. T
 - `test_*`: Execute the Python function. Implement as needed and assert as needed.
 - `ask_*`: Evaluate using GPT3.5-turbo (Note: doesn't work the best yet.)
 
+NOTE: You'll need to provide an OPENAI_API_KEY environment variable so that the client SDK can generate embeddings for your inputs and outputs. This would incur charges for OpenAI, and we recommend you set limits on your account with OpenAI.
+```python
+import os
+os.environ["OPENAI_API_KEY"]="YOUR_API_KEY"
+```
+
 First, create the test suite.
 ```python
 from aihero.eval import PromptTestSuite
