@@ -1,8 +1,10 @@
-from threading import Thread
 from .client import Client
+from threading import Thread
 from .exceptions import AIHeroException
 from .openai_helper import get_embedding, has_key
 from warnings import warn
+from datetime import datetime
+from .eval import PromptTestSuite
 
 
 class PromptStash:
@@ -81,16 +83,18 @@ class PromptStash:
         variant: str,
         trace_id: str,
         step_id: str,
+        inputs: dict,
+        rendered_inputs: str,
         prompt: str,
-        inputs: str,
         output: str,
         model: dict,
         metrics: dict,
         other: dict = None,
+        created_at: str = datetime.now().isoformat(),
     ):
-        inputs_embedding, err = get_embedding(inputs)
+        inputs_embedding, err = get_embedding(rendered_inputs)
         if err:
-            warn("Error generating embedding for inputs in child thread.")
+            warn("Error generating embedding for rendered_inputs in child thread.")
             raise AIHeroException(err)
         prompt_embedding, err = get_embedding(prompt)
         if err:
@@ -108,6 +112,7 @@ class PromptStash:
             "template_id": template_id,
             "variant": variant,
             "inputs": inputs,
+            "rendered_inputs": rendered_inputs,
             "prompt": prompt,
             "output": output,
             "inputs_embedding": inputs_embedding,
@@ -115,6 +120,7 @@ class PromptStash:
             "output_embedding": output_embedding,
             "model": model,
             "metrics": metrics,
+            "created_at": created_at,
         }
 
         if other is None:
@@ -135,8 +141,9 @@ class PromptStash:
         variant: str,
         trace_id: str,
         step_id: str,
+        inputs: dict,
+        rendered_inputs: str,
         prompt: str,
-        inputs: str,
         output: str,
         model: dict,
         metrics: dict,
@@ -150,8 +157,9 @@ class PromptStash:
                     variant,
                     trace_id,
                     step_id,
-                    prompt,
                     inputs,
+                    rendered_inputs,
+                    prompt,
                     output,
                     model,
                     metrics,
@@ -170,6 +178,7 @@ class PromptStash:
         correction: str,
         annotations: dict,
         other: dict = None,
+        created_at: str = datetime.now().isoformat(),
     ):
         stash_obj = {
             "trace_id": trace_id,
@@ -179,6 +188,7 @@ class PromptStash:
             "thumbs_down": thumbs_down,
             "correction": correction,
             "annotations": annotations,
+            "created_at": created_at,
         }
         if other is None:
             other = {}
@@ -215,3 +225,11 @@ class PromptStash:
             ).start()
         else:
             raise AIHeroException("No OPENAI_API_KEY in env variables.")
+
+    def build_test_suite(
+        self, test_suite_id: str, test_suite_cls: type
+    ) -> PromptTestSuite:
+        assert issubclass(test_suite_cls, PromptTestSuite)
+        return test_suite_cls(
+            self._project_id, self._client, test_suite_id=test_suite_id
+        )
