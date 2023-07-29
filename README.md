@@ -7,6 +7,7 @@ Install AI Hero using pip:
 pip install aihero==0.2.7
 ```
 
+
 ## Prompt Stash
 In the rapidly evolving world of AI, the ability to manage and control versions of prompts becomes incredibly important. Much like software version control, prompt versioning allows developers to track changes, revert to previous versions, and implement updates in a controlled and systematic manner. This is especially useful when you want to recall previous versions of your AI model's prompt templates, perhaps for debugging, comparison or to manage different versions of an AI. That's where the concept of "Promptstash" in AI Hero Python SDK comes into play. 
 
@@ -35,7 +36,11 @@ variant = ps.stash_template(template_id="paul-graham-essay", body=TEMPLATE_STR)
 ```
 
 You can see the prompt stashed in your AI Hero UI. 
-![Stashed Prompt Templates](assets/variants.png)
+![Stashed Prompt Templates](assets/templates.png)
+
+
+You can also see each variant of each prompt template stashed in your AI Hero UI. 
+![Stashed Variants](assets/variants.png)
 
 ### Recalling Previously Stashed Templates
 
@@ -79,7 +84,7 @@ os.environ["OPENAI_API_KEY"]="YOUR_API_KEY"
 ### Traces
 You can observe the traces (that you tracked with `trace_id` and `step_id` above)
 ![Traces](assets/traces.png) 
-![Trace](assets/trace.png) 
+
 
 ### Evaluation (early release)
 
@@ -155,7 +160,8 @@ ts.run(
 ```
 
 You can see the eval results in the UI.
-![Eval](assets/eval.png) 
+![Evaluations](assets/evals.png) 
+![Test Run](assets/eval.png) 
 
 ### Record Feedback
 You can record feedback from your user using the same trace_id and addinng your user feedback.

@@ -79,10 +79,10 @@ class PromptStash:
 
     def _sync_stash_completion(
         self,
-        template_id: str,
-        variant: str,
         trace_id: str,
         step_id: str,
+        template_id: str,
+        variant: str,
         inputs: dict,
         rendered_inputs: str,
         prompt: str,
@@ -137,10 +137,10 @@ class PromptStash:
 
     def stash_completion(
         self,
-        template_id: str,
-        variant: str,
         trace_id: str,
         step_id: str,
+        template_id: str,
+        variant: str,
         inputs: dict,
         rendered_inputs: str,
         prompt: str,
@@ -153,10 +153,10 @@ class PromptStash:
             Thread(
                 target=self._sync_stash_completion,
                 args=(
-                    template_id,
-                    variant,
                     trace_id,
                     step_id,
+                    template_id,
+                    variant,
                     inputs,
                     rendered_inputs,
                     prompt,
