@@ -1,3 +1,6 @@
+"""Exceptions for AI Hero"""
+
+
 class AIHeroException(Exception):
     """Generic AI Hero exception class"""
 

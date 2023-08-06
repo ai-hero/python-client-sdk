@@ -1,4 +1,6 @@
+"""OpenAI helper functions"""
 import os
+
 import httpx
 
 BASE_URL = "https://api.openai.com/v1/"

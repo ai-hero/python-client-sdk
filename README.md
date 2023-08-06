@@ -106,12 +106,11 @@ class PGBotTests(PromptTestSuite):
     def test_unquoted(self, output):
         assert not (output.startswith('"') and output.endswith('"'))
 
-    def ask_is_first_person(self) -> str:
-        
-        return "Is the text in the first person point of view?"
+    def ask_is_first_person(self) -> str:        
+        return "Is the output in the first person point of view?"
 
     def ask_is_spanish(self) -> str:
-        return "Is the language Spanish?"
+        return "Is the output language Spanish?"
 
 ts = ps.build_test_suite(test_suite_id="pg-bot-tests", test_suite_cls=PGBotTests)
 ```
@@ -135,9 +134,6 @@ for question in [
 
     prompt = template_str
     prompt = prompt.replace("{query_str}", question)
-
-    trace_id = str(uuid4())
-    step_id = str(uuid4())
 
     completions.append(
         {
