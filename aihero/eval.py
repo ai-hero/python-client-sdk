@@ -1,10 +1,12 @@
 """Evaluation module for AIHero."""
 import inspect
+from io import StringIO
 import traceback
 from abc import ABC
+from collections import defaultdict
 from uuid import uuid4
 from warnings import warn
-from collections import defaultdict
+
 import validators
 
 from .exceptions import AIHeroException
@@ -74,11 +76,27 @@ class PromptTestSuite(ABC):
                         "Error generating embedding for rendered_inputs in child thread."
                     )
                     raise AIHeroException(err)
-                prompt_embedding, err = get_embedding(prompt)
+                if isinstance(prompt, str):
+                    prompt_embedding, err = get_embedding(prompt)
+                else:
+                    assert isinstance(prompt, list)
+                    sio = StringIO()
+                    for message in prompt:
+                        sio.write(
+                            f"{message['role'].upper()}:\n-------------------\n{message['content']}\n-------------------\n"
+                        )
+                        sio.write("\n")
+                    prompt_embedding, err = get_embedding(sio.getvalue())
                 if err:
                     warn("Error generating embedding for prompt in child thread.")
                     raise AIHeroException(err)
-                output_embedding, err = get_embedding(output)
+
+                if isinstance(output, str):
+                    output_embedding, err = get_embedding(output)
+                else:
+                    assert isinstance(output, dict)
+                    output_embedding, err = get_embedding(output["content"])
+
                 if err:
                     warn("Error generating embedding for output in child thread.")
                     raise AIHeroException(err)
@@ -127,6 +145,28 @@ class PromptTestSuite(ABC):
             # Schema check
             for k in ["rendered_inputs", "prompt", "output", "inputs"]:
                 assert k in completion, f"Each completion must have a '{k}' key"
+                if k == "rendered_inputs":
+                    assert isinstance(completion[k], str), f"{k} must be a str"
+                elif k == "inputs":
+                    assert isinstance(completion[k], dict), f"{k} must be a dict"
+                elif k == "prompt":
+                    assert isinstance(completion[k], str) or isinstance(
+                        completion[k], list
+                    ), f"{k} must be a string or a list"
+                    if isinstance(completion[k], list):
+                        for msg in completion[k]:
+                            assert "role" in msg, "Each message must have a role"
+                            assert "content" in msg, "Each message must have a content"
+
+                elif k == "output":
+                    assert isinstance(completion[k], str) or isinstance(
+                        completion[k], dict
+                    ), f"{k} must be a string or dict"
+
+                    if isinstance(completion[k], dict):
+                        msg = completion[k]
+                        assert "role" in msg, "Each message must have a role"
+                        assert "content" in msg, "Each message must have a content"
         assert model, "Please provide a model"
         assert isinstance(model, dict), "model must be a dict"
         assert "name" in model, "model must have a name"
@@ -140,6 +180,7 @@ class PromptTestSuite(ABC):
         assert len(metrics["times"]) == len(
             completions
         ), "Number of times must be equal to the number of completions."
+
         other = other or {}
         if other:
             assert isinstance(other, dict), "other must be a dict"
@@ -153,6 +194,8 @@ class PromptTestSuite(ABC):
                 completion["rendered_inputs"],
                 completion["output"],
             )
+            if isinstance(output, dict):
+                output = output["content"]
             context = test_text_template.format(
                 rendered_inputs=rendered_inputs, output=output
             )
@@ -309,7 +352,7 @@ class PromptTestSuite(ABC):
                     "model": {
                         "provider": "openai",
                         "api": "chat_completion",
-                        "model": "gpt3.5-turbo",
+                        "model": "gpt-3.5-turbo",
                     },
                 },
                 "other": other,

@@ -2,9 +2,10 @@
 from datetime import datetime
 from threading import Thread
 from warnings import warn
-
+from io import StringIO
+from typing import Optional, Union
 import validators
-
+from uuid import uuid4
 from .client import Client
 from .eval import PromptTestSuite
 from .exceptions import AIHeroException
@@ -31,13 +32,13 @@ class PromptStash:
     def stash_template(
         self,
         template_id: str,
-        body: str,
-        name: str = None,
-        description: str = None,
+        body: Union[str, list],
+        name: Optional[str] = None,
+        description: Optional[str] = None,
         prompt_format: str = "f-string",
-        sections: dict = None,
+        sections: Optional[dict] = None,
         author: str = "",
-        other: dict = None,
+        other: Optional[dict] = None,
     ) -> str:
         """Stash a prompt template to the AI Hero Prompt Stash."""
         assert template_id, "Please provide a template_id"
@@ -46,7 +47,27 @@ class PromptStash:
             template_id
         ), "template_id should be a valid slug (i.e. '^[-a-zA-Z0-9_]+$')"
         assert body, "Please provide a body"
-        assert isinstance(body, str), "body must be a string"
+        assert isinstance(body, str) or isinstance(
+            body, list
+        ), "body must be a string or list"
+        if isinstance(body, list):
+            for body_item in body:
+                assert isinstance(body_item, dict), "body must be a list of dicts"
+                assert (
+                    "role" in body_item
+                ), "body must be a list of dicts with a 'role' key"
+                assert body_item["role"] in [
+                    "system",
+                    "user",
+                    "assistant",
+                    "function",
+                ], "body must be a list of dicts with a 'role' key with value 'system', 'user', 'assistant' or 'function'"
+                assert (
+                    "content" in body_item
+                ), "body must be a list of dicts with a 'content' key"
+                assert isinstance(
+                    body_item["content"], str
+                ), "body must be a list of dicts with a 'content' key with value of type string"
         if name:
             assert isinstance(name, str), "name must be a string"
         if description:
@@ -85,7 +106,7 @@ class PromptStash:
         )
         return prompt_template_dict["variant"]
 
-    def variant(self, template_id: str, variant: str = None) -> str:
+    def variant(self, template_id: str, variant: str = None) -> Union[str, list]:
         """Get a prompt template variant from the AI Hero Prompt Stash."""
         assert template_id, "Please provide a template_id"
         assert isinstance(template_id, str), "template_id must be a string"
@@ -127,7 +148,7 @@ class PromptStash:
         variant: str,
         inputs: dict,
         rendered_inputs: str,
-        prompt: str,
+        prompt: Union[str, list],
         output: str,
         model: dict,
         metrics: dict,
@@ -142,14 +163,27 @@ class PromptStash:
             if err:
                 warn("Error generating embedding for rendered_inputs in child thread.")
                 raise AIHeroException(err)
-            prompt_embedding, err = get_embedding(prompt)
+            if isinstance(prompt, str):
+                prompt_embedding, err = get_embedding(prompt)
+            else:
+                assert isinstance(prompt, list)
+                sio = StringIO()
+                for message in prompt:
+                    sio.write(
+                        f"{message['role'].upper()}:\n-------------------\n{message['content']}\n-------------------\n"
+                    )
+                    sio.write("\n")
+                prompt_embedding, err = get_embedding(sio.getvalue())
             if err:
                 warn("Error generating embedding for prompt in child thread.")
                 raise AIHeroException(err)
-            output_embedding, err = get_embedding(output)
-            if err:
-                warn("Error generating embedding for output in child thread.")
-                raise AIHeroException(err)
+
+            if isinstance(output, str):
+                output_embedding, err = get_embedding(output)
+            else:
+                assert isinstance(output, dict)
+                output_embedding, err = get_embedding(output["content"])
+
             other["embedding_model"] = "text-embedding-ada-002"
         else:
             inputs_embedding = None
@@ -189,8 +223,8 @@ class PromptStash:
         variant: str,
         inputs: dict,
         rendered_inputs: str,
-        prompt: str,
-        output: str,
+        prompt: Union[str, list],
+        output: Union[str, dict],
         model: dict,
         metrics: dict,
         other: dict = None,
@@ -217,9 +251,45 @@ class PromptStash:
         assert rendered_inputs, "Please provide rendered_inputs"
         assert isinstance(rendered_inputs, str), "rendered_inputs must be a string"
         assert prompt, "Please provide a prompt"
-        assert isinstance(prompt, str), "prompt must be a string"
+        assert isinstance(prompt, str) or isinstance(
+            prompt, list
+        ), "prompt must be a string or list"
+        if isinstance(prompt, list):
+            for prompt_item in prompt:
+                assert isinstance(prompt_item, dict), "prompt must be a list of dicts"
+                assert (
+                    "role" in prompt_item
+                ), "prompt must be a list of dicts with a 'role' key"
+                assert prompt_item["role"] in [
+                    "system",
+                    "user",
+                    "assistant",
+                    "function",
+                ], "prompt must be a list of dicts with a 'role' key with value 'system', 'user', 'assistant' or 'function'"
+                assert (
+                    "content" in prompt_item
+                ), "prompt must be a list of dicts with a 'content' key"
+                assert isinstance(
+                    prompt_item["content"], str
+                ), "prompt must be a list of dicts with a 'content' key with value of type string"
         assert output, "Please provide an output"
-        assert isinstance(output, str), "output must be a string"
+        assert isinstance(output, str) or isinstance(
+            output, dict
+        ), "output must be a string or dict"
+        if isinstance(output, dict):
+            assert "role" in output, "output must be a list of dicts with a 'role' key"
+            assert output["role"] in [
+                "system",
+                "user",
+                "assistant",
+                "function",
+            ], "output must be a list of dicts with a 'role' key with value 'system', 'user', 'assistant' or 'function'"
+            assert (
+                "content" in output
+            ), "output must be a list of dicts with a 'content' key"
+            assert isinstance(
+                output["content"], str
+            ), "output must be a list of dicts with a 'content' key with value of type string"
         assert model, "Please provide a model"
         assert isinstance(model, dict), "model must be a dict"
         assert "name" in model, "model must have a name"
@@ -284,20 +354,22 @@ class PromptStash:
     def stash_feedback(
         self,
         trace_id: str,
-        step_id: str,
+        for_step_id: str,
         thumbs_up: bool,
         thumbs_down: bool,
         correction: str = None,
         annotations: dict = None,
+        for_message_id: str = None,
         other: dict = None,
     ):
         """Stash a feedback to the AI Hero Prompt Stash."""
         assert trace_id, "Please provide a trace_id"
         assert isinstance(trace_id, str), "trace_id must be a string"
         assert validators.uuid(trace_id), "trace_id should be a valid UUID"
-        assert step_id, "Please provide a step_id"
-        assert isinstance(step_id, str), "step_id must be a string"
-        assert validators.uuid(step_id), "step_id should be a valid UUID"
+        step_id = str(uuid4())
+        assert for_step_id, "Please provide a for_step_id"
+        assert isinstance(for_step_id, str), "for_step_id must be a string"
+        assert validators.uuid(for_step_id), "for_step_id should be a valid UUID"
         assert isinstance(thumbs_up, bool), "thumbs_up must be a bool"
         assert isinstance(thumbs_down, bool), "thumbs_down must be a bool"
         if thumbs_up and thumbs_down:
@@ -308,8 +380,15 @@ class PromptStash:
         assert isinstance(annotations, dict), "annotations must be a dict"
         for k, _ in annotations.items():
             assert isinstance(k, str), "annotations keys must be strings"
+        if for_message_id:
+            assert isinstance(for_message_id, str), "message_id must be a string"
+            assert validators.uuid(for_message_id), "message_id should be a valid UUID"
         if other:
             assert isinstance(other, dict), "other must be a dict"
+        other = other or {}
+        other["for_step_id"] = for_step_id
+        if for_message_id:
+            other["for_message_id"] = for_message_id
         Thread(
             target=self._sync_stash_feedback,
             args=(
