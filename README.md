@@ -4,22 +4,34 @@ The AI Hero Python SDK offers a powerful set of tools for managing and developin
 ## Installation
 Install AI Hero using pip:
 ```bash
-pip install aihero==0.2.7
+pip install aihero==0.2.8
 ```
 
 
-## Prompt Stash
+# PromptStash
 In the rapidly evolving world of AI, the ability to manage and control versions of prompts becomes incredibly important. Much like software version control, prompt versioning allows developers to track changes, revert to previous versions, and implement updates in a controlled and systematic manner. This is especially useful when you want to recall previous versions of your AI model's prompt templates, perhaps for debugging, comparison or to manage different versions of an AI. That's where the concept of "Promptstash" in AI Hero Python SDK comes into play. 
 
+## Tutorials
+We have two tutorials for you:
+- [PromptOps with OpenAI's Completions API + PromptStash (Beginner)](examples/PromptOps_with_OpenAI_Completions_API_+_PromptStash_(Beginner).ipynb) - In this example tutorial, we'll use an LLM to do some English to Japanese translation for us so that we can talk to our friend in Japanese and look at the PromptOps associated with it. [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/ai-hero/python-client-sdk/blob/master/examples/PromptOps_with_OpenAI_Completions_API_+_PromptStash_(Beginner).ipynb)
+
+- [PromptOps with OpenAI's Chat Completions API + PromptStash (Beginner)](examples/PromptOps_with_OpenAI_Chat_Completions_API_+_PromptStash_(Beginner).ipynb) - In this example tutorial, we'll use a LLM Chat Bot as a Japanese tutor for us so that we can learn Japanese through conversation and look at the PromptOps associated with it. [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/ai-hero/python-client-sdk/blob/master/examples/PromptOps_with_OpenAI_Chat_Completions_API_+_PromptStash_(Beginner).ipynb)
+
+There's more coming soon! 
+- We're building a notebook for Retrieval Augmented Generation. 
+- Hit us up if you'd like a custom demo at `team@aihero.studio`.
+
+## Overview
 As an example, let's say you want to create a "Ask PG (i.e. Paul Graham from YC) Bot". You'll already be using a template like this for Langchain, LlamaIndex, etc.
 ```python
 TEMPLATE_STR = (
-      "The following is a blog by Paul Graham. You will answer the question below using the context provided.\n"
-      "---------------------\n"
-      "{context_str}"
-      "\n---------------------\n"
-      "Given this information, please answer the question: {query_str}\n"
-  )
+  "The following is a blog by Paul Graham.\n"
+  "You will answer the question below using the context provided.\n"
+  "---------------------\n"
+  "{context_str}"
+  "\n---------------------\n"
+  "Given this information, please answer the question: {query_str}\n"
+)
 ```
 
 Let's create the promptstash instance ps using the project id and API key from the AI Hero. To get them you'll need to log into [https://app.aihero.studio] and create a project. Note your default project id and API key. 
@@ -54,6 +66,7 @@ You can also stash and visualize each prompt input and output for your variants.
 ```python
 trace_id = str(uuid4())
 step_id = str(uuid4())
+
 ps.stash_completion(
     trace_id=trace_id,
     step_id=step_id,
@@ -63,7 +76,7 @@ ps.stash_completion(
     output=output,
     inputs={"question": question},
     rendered_inputs=f"Question: {question}",
-    model={"name": "openai-davinci-003"},
+    model={"name": "openai-davinci-003", "version": date.today().strftime("%Y-%m-%d")},
     metrics={"time": (toc - tic)},
     other={"embedding_model": "text-embedding-ada-002"},
 )
@@ -106,12 +119,11 @@ class PGBotTests(PromptTestSuite):
     def test_unquoted(self, output):
         assert not (output.startswith('"') and output.endswith('"'))
 
-    def ask_is_first_person(self) -> str:
-        
-        return "Is the text in the first person point of view?"
+    def ask_is_first_person(self) -> str:        
+        return "Is the output in the first person point of view?"
 
     def ask_is_spanish(self) -> str:
-        return "Is the language Spanish?"
+        return "Is the output language Spanish?"
 
 ts = ps.build_test_suite(test_suite_id="pg-bot-tests", test_suite_cls=PGBotTests)
 ```
@@ -135,9 +147,6 @@ for question in [
 
     prompt = template_str
     prompt = prompt.replace("{query_str}", question)
-
-    trace_id = str(uuid4())
-    step_id = str(uuid4())
 
     completions.append(
         {
