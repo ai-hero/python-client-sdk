@@ -4,7 +4,7 @@ The AI Hero Python SDK offers a powerful set of tools for managing and developin
 ## Installation
 Install AI Hero using pip:
 ```bash
-pip install aihero==0.2.8
+pip install aihero==0.2.9
 ```
 
 
