@@ -1,6 +1,6 @@
 """Project class to interact with AI Hero API"""
 import validators
-
+import os
 from .client import Client
 from .promptstash import PromptStash
 
@@ -25,7 +25,7 @@ class Project:
         ], f"Server URL should be {PRODUCTION_URL}."
 
         self._project_id = project_id
-        self._client = Client(bearer_token=api_key, server_url=server_url)
+        self._client = Client(bearer_token=api_key)
         self.get()  # check
 
     def get(self, verbose: bool = False):

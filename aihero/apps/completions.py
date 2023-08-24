@@ -140,7 +140,10 @@ def main():
                 "version": date.today().strftime("%Y-%m-%d"),
             }
 
-    st.title("AI Hero - Prompt Engineering with OpenAI Completions API")
+    st.title("PromptCraft - Prompt Engineering using OpenAI Completions API.")
+    st.text(
+        "PromptCraft, by AI Hero, is the fastest way for product managers and prompt engineers \nto iterate on a prompt and share it with their engineering team."
+    )
     if not st.session_state.template_id.strip():
         st.warning("Please enter a template ID in the sidebar on the left.")
     elif not st.session_state.template.strip():
