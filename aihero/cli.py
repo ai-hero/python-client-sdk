@@ -3,7 +3,8 @@ import fire
 import subprocess
 
 
-def pe(app: str = "completions"):
+def pc(app: str = "completions"):
+    """Run the Streamlit app"""
     # Get the current directory of cli.py
     current_dir = os.path.dirname(os.path.abspath(__file__))
 
@@ -16,10 +17,12 @@ def pe(app: str = "completions"):
 
 
 def main():
+    """The main entry point of the application"""
     # Using Fire to automatically generate a command line interface
     fire.Fire(
         {
-            "pe": pe,
+            "promptcraft": pc,
+            "pc": pc,
             # Add more commands as needed
         }
     )

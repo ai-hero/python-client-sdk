@@ -170,7 +170,9 @@ def main():
                     )
                     prompt = filled_template
                     inputs = st.session_state.user_inputs
-                    rendered_inputs = f"Text: {inputs['text']}"
+                    rendered_inputs = "\n".join(
+                        [f"{k}: {v}" for k, v in inputs.items()]
+                    )
 
                     # Capture the start time (tic) right before making the API call
                     tic = time.perf_counter()
@@ -187,9 +189,11 @@ def main():
                     toc = time.perf_counter()
 
                     # Displaying the completion as text
-                    st.markdown("**Completion:**")
-                    st.text(rendered_inputs)
-                    st.text(response.choices[0].text)
+                    st.markdown("**Result:**")
+                    st.text("Inputs: ")
+                    st.markdown(f"```{rendered_inputs}```")
+                    st.text("Completion: ")
+                    st.markdown(f"```{response.choices[0].text}```")
 
                     output = response.choices[0].text
 
@@ -274,14 +278,14 @@ def main():
                                 # Update session state user_inputs for the current row
                                 st.session_state.user_inputs = row.to_dict()
 
-                                trace_id = str(uuid4())
-                                step_id = str(uuid4())
                                 filled_template = st.session_state.template.format(
                                     **st.session_state.user_inputs
                                 )
                                 prompt = filled_template
                                 inputs = st.session_state.user_inputs
-                                rendered_inputs = f"Text: {inputs['text']}"
+                                rendered_inputs = "\n".join(
+                                    [f"{k}: {v}" for k, v in inputs.items()]
+                                )
 
                                 # Capture the start time (tic) right before making the API call
                                 tic = time.perf_counter()
@@ -298,28 +302,17 @@ def main():
                                 toc = time.perf_counter()
 
                                 # Displaying the completion as text for each row
-                                st.markdown(f"**Completion for row {index + 1}:**")
-                                st.text(response.choices[0].text)
+                                st.markdown(f"**Row {index + 1}:**")
+                                st.text("Inputs: ")
+                                st.markdown(f"```{rendered_inputs}```")
+                                st.text("Completion: ")
+                                st.markdown(f"```{response.choices[0].text}```")
 
                                 output = response.choices[0].text
                                 this_time = toc - tic
-                                ps.stash_completion(
-                                    trace_id=trace_id,
-                                    step_id=step_id,
-                                    template_id=st.session_state.template_id,
-                                    variant=st.session_state.current_variant,
-                                    prompt=prompt,
-                                    output=output,
-                                    inputs=inputs,
-                                    rendered_inputs=rendered_inputs,
-                                    model=st.session_state.model,
-                                    metrics={"time": this_time},
-                                    other={"usage": response.usage},
-                                )
+
                                 completions.append(
                                     {
-                                        "trace_id": trace_id,
-                                        "step_id": step_id,
                                         "inputs": inputs,
                                         "rendered_inputs": rendered_inputs,
                                         "prompt": prompt,
@@ -330,9 +323,6 @@ def main():
 
                             # Next, we calculate the average time taken, and run the test suite on our test cases.
                             avg_time = sum(times) / len(times)
-                            st.markdown(
-                                f"You can see your traces saved [here](https://app.aihero.studio/v1/tools/promptstash/projects/{AI_HERO_PROJECT_ID}/traces)"
-                            )
 
                             with st.spinner(
                                 "Running Tests (please check your console for progress)..."
