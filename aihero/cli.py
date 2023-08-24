@@ -9,7 +9,7 @@ def pc(app: str = "completions"):
     current_dir = os.path.dirname(os.path.abspath(__file__))
 
     # Construct the path to the Streamlit app
-    app_path = os.path.join(current_dir, "apps", f"{app}.py")
+    app_path = os.path.join(current_dir, "apps", "promptcraft", f"{app}.py")
 
     # Run the Streamlit app using subprocess
     command = f"streamlit run {app_path}"
