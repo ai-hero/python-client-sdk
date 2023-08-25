@@ -201,9 +201,9 @@ def main():
                     # Displaying the completion as text
                     st.markdown("**Result:**")
                     st.text("Inputs: ")
-                    st.markdown(f"```{rendered_inputs}```")
+                    st.markdown(f"{rendered_inputs}")
                     st.text("Completion: ")
-                    st.markdown(f"```{response.choices[0].text}```")
+                    st.markdown(f"{response.choices[0].text}")
 
                     output = response.choices[0].text
 
@@ -314,9 +314,9 @@ def main():
                                 # Displaying the completion as text for each row
                                 st.markdown(f"**Row {index + 1}:**")
                                 st.text("Inputs: ")
-                                st.markdown(f"```{rendered_inputs}```")
+                                st.markdown(f"{rendered_inputs}")
                                 st.text("Completion: ")
-                                st.markdown(f"```{response.choices[0].text}```")
+                                st.markdown(f"{response.choices[0].text}")
 
                                 output = response.choices[0].text
                                 this_time = toc - tic
@@ -349,7 +349,7 @@ def main():
                                 st.markdown(
                                     f"Your test results are [here](https://app.aihero.studio/v1/tools/promptstash/projects/{AI_HERO_PROJECT_ID}/prompt_templates/{st.session_state.template_id}/variants/{st.session_state.current_variant}/test_suites/{test_template_id}/test_runs/{test_run_id})"
                                 )
-                                st.markdown(f"```{summary}```")
+                                st.markdown(f"{summary}")
 
             except Exception as exc:  # pylint: disable=broad-except
                 st.error(f"An error occurred: {exc}")
