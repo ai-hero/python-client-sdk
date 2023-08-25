@@ -4,7 +4,7 @@ The AI Hero Python SDK offers a powerful set of tools for managing and developin
 ## Installation
 Install AI Hero using pip:
 ```bash
-pip install aihero==0.2.8
+pip install aihero==0.2.9
 ```
 
 
@@ -78,7 +78,7 @@ ps.stash_completion(
     rendered_inputs=f"Question: {question}",
     model={"name": "openai-davinci-003", "version": date.today().strftime("%Y-%m-%d")},
     metrics={"time": (toc - tic)},
-    other={"embedding_model": "text-embedding-ada-002"},
+    other={},
 )
 ```
 
@@ -164,7 +164,7 @@ ts.run(
     completions=completions,
     model={"name": "openai-davinci-003"},
     metrics={"time": avg_time},
-    other={"embedding_model": "text-embedding-ada-002"},
+    other={},
 )
 ```
 
@@ -183,6 +183,6 @@ ps.stash_feedback(
     thumbs_down=False,
     correction="Foo",
     annotations={"user": "a"},
-    other={"embedding_model": "text-embedding-ada-002"},
+    other={},
 )
 ```

@@ -153,7 +153,7 @@ class PromptStash:
         model: dict,
         metrics: dict,
         other: dict = None,
-        created_at: str = datetime.now().isoformat(),
+        created_at: str = None,
     ):
         """Sync a completion to the AI Hero Prompt Stash."""
         other = other or {}
@@ -206,7 +206,7 @@ class PromptStash:
             "model": model,
             "metrics": metrics,
             "other": other,
-            "created_at": created_at,
+            "created_at": created_at or datetime.now().isoformat(),
         }
         self._client.post(
             f"/tools/promptstash/projects/{self._project_id}/stash",
@@ -244,11 +244,11 @@ class PromptStash:
         assert variant, "Please provide a variant"
         assert isinstance(variant, str), "variant must be a string"
         assert validators.md5(variant), "variant should be a valid MD5 hash"
-        assert inputs, "Please provide inputs"
+        assert inputs is not None, "Please provide inputs"
         assert isinstance(inputs, dict), "inputs must be a dict"
         for k, _ in inputs.items():
             assert isinstance(k, str), "inputs keys must be strings"
-        assert rendered_inputs, "Please provide rendered_inputs"
+        assert rendered_inputs is not None, "Please provide rendered_inputs"
         assert isinstance(rendered_inputs, str), "rendered_inputs must be a string"
         assert prompt, "Please provide a prompt"
         assert isinstance(prompt, str) or isinstance(
@@ -328,7 +328,7 @@ class PromptStash:
         correction: str,
         annotations: dict,
         other: dict = None,
-        created_at: str = datetime.now().isoformat(),
+        created_at: str = None,
     ):
         """Sync a feedback to the AI Hero Prompt Stash."""
         stash_obj = {
@@ -339,7 +339,7 @@ class PromptStash:
             "thumbs_down": thumbs_down,
             "correction": correction,
             "annotations": annotations,
-            "created_at": created_at,
+            "created_at": created_at or datetime.now().isoformat(),
         }
         if other is None:
             other = {}

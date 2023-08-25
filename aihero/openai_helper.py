@@ -9,21 +9,20 @@ MODEL = "text-davinci-003"
 EMBEDDINGS = "embeddings"
 CHAT_COMPLETIONS = "chat/completions"
 EMBEDDINGS_MODEL = "text-embedding-ada-002"
-OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY")
 
 
 def has_key():
-    return OPENAI_API_KEY is not None
+    return os.environ.get("OPENAI_API_KEY") is not None
 
 
-def complete_with_gpt3(row: dict, template: any, api_key: str = OPENAI_API_KEY):
+def complete_with_gpt3(row: dict, template: any):
     prompt = template.render(**row)
     try:
         with httpx.Client(
             base_url=BASE_URL,
             headers={
                 "Content-Type": "application/json",
-                "Authorization": f"Bearer {api_key}",
+                "Authorization": f"Bearer {os.environ['OPENAI_API_KEY']}",
             },
         ) as client:
             resp = client.post(
@@ -43,13 +42,13 @@ def complete_with_gpt3(row: dict, template: any, api_key: str = OPENAI_API_KEY):
         return None, str(e)
 
 
-def get_embedding(text: str, api_key: str = OPENAI_API_KEY):
+def get_embedding(text: str):
     try:
         with httpx.Client(
             base_url=BASE_URL,
             headers={
                 "Content-Type": "application/json",
-                "Authorization": f"Bearer {api_key}",
+                "Authorization": f"Bearer {os.environ['OPENAI_API_KEY']}",
             },
         ) as client:
             resp = client.post(
@@ -69,8 +68,7 @@ def get_embedding(text: str, api_key: str = OPENAI_API_KEY):
 
 
 class ChatCompletion:
-    def __init__(self, system_message, api_key: str = OPENAI_API_KEY):
-        self.api_key = api_key
+    def __init__(self, system_message):
         self.messages = [
             {
                 "role": "system",
@@ -87,7 +85,7 @@ class ChatCompletion:
                 base_url=BASE_URL,
                 headers={
                     "Content-Type": "application/json",
-                    "Authorization": f"Bearer {self.api_key}",
+                    "Authorization": f"Bearer {os.environ['OPENAI_API_KEY']}",
                 },
             ) as client:
                 resp = client.post(

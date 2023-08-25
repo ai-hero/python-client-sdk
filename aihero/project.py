@@ -1,6 +1,6 @@
 """Project class to interact with AI Hero API"""
 import validators
-
+import os
 from .client import Client
 from .promptstash import PromptStash
 
@@ -11,12 +11,8 @@ SANDBOX_URL = "https://sandbox.aihero.studio"
 class Project:
     """Main sync client class to talk to AI Hero"""
 
-    def __init__(
-        self,
-        project_id: str,
-        api_key: str,
-        server_url: str = PRODUCTION_URL,
-    ):
+    def __init__(self, project_id: str, api_key: str):
+        server_url = os.environ.get("AI_HERO_SERVER_URL", PRODUCTION_URL)
         assert project_id, "Please provide a project_id"
         assert validators.uuid(project_id), "project_id should be a valid UUID"
         assert api_key, "Please provide an api_key"
@@ -29,7 +25,7 @@ class Project:
         ], f"Server URL should be {PRODUCTION_URL}."
 
         self._project_id = project_id
-        self._client = Client(bearer_token=api_key, server_url=server_url)
+        self._client = Client(bearer_token=api_key)
         self.get()  # check
 
     def get(self, verbose: bool = False):

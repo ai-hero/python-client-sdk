@@ -1,6 +1,6 @@
 """Client for AI Hero API"""
 from warnings import warn
-
+import os
 import httpx
 import validators
 
@@ -16,7 +16,8 @@ class Client:
     _base_url: str = None
     _authorization: str = None
 
-    def __init__(self, bearer_token: str, server_url: str = PRODUCTION_URL):
+    def __init__(self, bearer_token: str):
+        server_url = os.environ.get("AI_HERO_SERVER_URL", PRODUCTION_URL)
         assert bearer_token, "Please provide a bearer_token"
         assert isinstance(bearer_token, str), "bearer_token should be a string."
         assert server_url, "Please provide a server_url"

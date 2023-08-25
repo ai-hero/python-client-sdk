@@ -318,18 +318,19 @@ class PromptTestSuite(ABC):
         failed_count = 0
         errored_count = 0
         total_count = 0
-        print("PASS/FAIL SUMMARY:")
-        print("\tPASSED\tFAILED\tERRORED\tTOTAL\tTEST")
+
+        summary = ""
+        summary += "PASS/FAIL SUMMARY:\n"
+        summary += "\tPASSED\tFAILED\tERRORED\tTOTAL\tTEST\n"
         for method_name in total_counts:
             total_count += total_counts[method_name]
             passed_count += passed_counts[method_name]
             failed_count += failed_counts[method_name]
             errored_count += errored_counts[method_name]
-            print(
-                f"\t{passed_counts[method_name]}\t{failed_counts[method_name]}\t{errored_counts[method_name]}\t{total_counts[method_name]}\t{method_name}"
-            )
-        print("TOTALS:")
-        print(f"\t{passed_count}\t{failed_count}\t{errored_count}\t{total_count}")
+            summary += f"\t{passed_counts[method_name]}\t{failed_counts[method_name]}\t{errored_counts[method_name]}\t{total_counts[method_name]}\t{method_name}\n"
+        summary += "TOTALS:\n"
+        summary += f"\t{passed_count}\t{failed_count}\t{errored_count}\t{total_count}\n"
+        print(summary)
         metrics["summary"] = {
             "passed": passed_count,
             "failed": failed_count,
@@ -358,3 +359,5 @@ class PromptTestSuite(ABC):
                 "other": other,
             },
         )
+
+        return run_id, summary
