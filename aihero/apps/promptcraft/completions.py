@@ -72,6 +72,8 @@ visibility: hidden;
 
 # Streamlit App
 def main():
+    st.sidebar.title("PromptCraft")
+    st.sidebar.markdown("This app is powered by [AI Hero](https://app.aihero.studio).")
     # Using Sidebar for Prompt Template and Settings
     st.sidebar.write("**Step 1: Prompt Template:**")
 
@@ -98,7 +100,12 @@ def main():
             )  # Update the session state variable with the loaded template
         else:
             st.session_state.current_variant = ""
-            st.session_state.current_template = """Translate the following text into Japanese:\n{text}\n\nTranslation:"""
+            try:
+                st.session_state.current_template = ps.variant(
+                    template_id=st.session_state.template_id
+                )
+            except Exception:  # pylint: disable=broad-except
+                st.session_state.current_template = """Translate the following text into Japanese:\n{text}\n\nTranslation:"""
 
         st.sidebar.divider()
         st.sidebar.write("**Step 2: Enter a Prompt Template:**")
@@ -140,9 +147,9 @@ def main():
                 "version": date.today().strftime("%Y-%m-%d"),
             }
 
-    st.title("PromptCraft - Prompt Engineering using OpenAI Completions API.")
-    st.text(
-        "PromptCraft, by AI Hero, is the fastest way for product managers and prompt engineers \nto iterate on a prompt and share it with their engineering team."
+    st.title("PromptCraft using OpenAI Completions API")
+    st.markdown(
+        "PromptCraft, by AI Hero, is the fastest way for product managers and prompt engineers to iterate on a prompt and share it with their engineering team. Working along-side PromptStash, PromptCraft allows you to collaboratively develop, refine, and test prompts. Once ready, your engineering team can retrieve your best prompt template using PromptStash and deploy it to production."
     )
     if not st.session_state.template_id.strip():
         st.warning("Please enter a template ID in the sidebar on the left.")
