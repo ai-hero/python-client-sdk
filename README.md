@@ -7,7 +7,7 @@ AI Hero's PromptCraft and PromptStash helps you with:
 - Version Control for Prompts: Easily stash, manage, and recall prompt variants.
 - Track and Monitor AI Interactions: Document and visualize every AI interaction in real-time.
 - Analysis and Oversight: Observe AI's steps and decision-making.
-- Evaluation: Implement automated testing for AI's responses.
+- Evaluation: Implement automated testing for AI's responses and compare your previous runs.
 - Feedback System: Seamlessly log user feedback on AI outputs.
 
 ## Installation
