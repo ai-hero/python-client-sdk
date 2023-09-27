@@ -134,16 +134,95 @@ def main():
         with st.sidebar.expander("Settings", expanded=False):
             st.write("**Optional:**")
             st.write("**Advanced model and query settings:**")
-            st.session_state.engine = st.text_input(
-                "Model name:", "text-davinci-003", key="2"
+            st.session_state.engine = st.selectbox(
+                "Model name:",
+                ["text-davinci-003", "text-davinci-002", "code-davinci-002"],
+                index=0,
+                key="2",
             )
-            st.session_state.temperature = st.text_input("Temperature:", "0.7", key="3")
-            st.session_state.max_tokens = st.text_input("Max Tokens:", "256", key="6")
+
+            # Temperature
+            st.session_state.temperature = st.text_input(
+                "Temperature (from 0 to 1):", "0.7", key="3"
+            )
+            try:
+                assert (
+                    float(st.session_state.temperature) >= 0
+                    and float(st.session_state.temperature) <= 1
+                )
+            except (ValueError, AssertionError):
+                st.error(
+                    f"'{st.session_state.temperature}' is not a valid temperature. It should be a number between 0 and 1."
+                )
+                st.stop()
+
+            # Max Tokens
+            st.session_state.max_tokens = st.text_input(
+                "Max Tokens (depends on model):", "256", key="6"
+            )
+            try:
+                assert int(st.session_state.max_tokens) > 0 and int(
+                    st.session_state.max_tokens
+                ) <= (32 * 1024)
+            except (ValueError, AssertionError):
+                st.error(
+                    f"'{st.session_state.max_tokens}' is not a valid number. It should be a number greater than 0."
+                )
+                st.stop()
+
+            # Top-p
+            st.session_state.top_p = st.text_input(
+                "Top-p (from 0 to 1):", "1", key="15"
+            )
+            try:
+                assert (
+                    float(st.session_state.top_p) >= 0
+                    and float(st.session_state.top_p) <= 1
+                )
+            except (ValueError, AssertionError):
+                st.error(
+                    f"'{st.session_state.top_p}' is not a valid top_p. It should be a number between 0 and 1."
+                )
+                st.stop()
+
+            # Presence Penalty
+            st.session_state.presence_penalty = st.text_input(
+                "Presence Penalty (from -2 to 2):", "0", key="16"
+            )
+            try:
+                assert (
+                    float(st.session_state.presence_penalty) >= -2
+                    and float(st.session_state.presence_penalty) <= 2
+                )
+            except (ValueError, AssertionError):
+                st.error(
+                    f"'{st.session_state.presence_penalty}' is not a valid presence penalty. It should be a number between -2 and 2."
+                )
+                st.stop()
+
+            # Frequency Penalty
+            st.session_state.frequency_penalty = st.text_input(
+                "Frequency Penalty (from -2 to 2):", "0", key="17"
+            )
+            try:
+                assert (
+                    float(st.session_state.frequency_penalty) >= -2
+                    and float(st.session_state.frequency_penalty) <= 2
+                )
+            except (ValueError, AssertionError):
+                st.error(
+                    f"'{st.session_state.frequency_penalty}' is not a valid frequency penalty. It should be a number between -2 and 2."
+                )
+                st.stop()
+
             st.session_state.model = {
                 "name": st.session_state.engine,
                 "engine": st.session_state.engine,
                 "temperature": float(st.session_state.temperature),
                 "max_tokens": int(st.session_state.max_tokens),
+                "top_p": float(st.session_state.top_p),
+                "presence_penalty": float(st.session_state.presence_penalty),
+                "frequency_penalty": float(st.session_state.frequency_penalty),
                 "version": date.today().strftime("%Y-%m-%d"),
             }
 
@@ -193,6 +272,9 @@ def main():
                         prompt=filled_template,
                         temperature=float(st.session_state.temperature),
                         max_tokens=int(st.session_state.max_tokens),
+                        top_p=int(st.session_state.top_p),
+                        presence_penalty=float(st.session_state.presence_penalty),
+                        frequency_penalty=float(st.session_state.frequency_penalty),
                     )
 
                     # Capture the end time (toc) after getting the response
@@ -231,13 +313,13 @@ def main():
                 "Enter your Python code:",
                 """class Tests(PromptTestSuite):
     # Pythonic test
-    def test_has_length(self, output):        
+    def test_has_length(self, output):
         assert len(output)
 
     # Evaluate using gpt-3.5-turbo
     def ask_is_japanese(self) -> str:
         return "Does the text contain Japanese?"
-        
+
     def test_has_pronunciation_guide(self, output):
         assert "pronunc" in output.lower() or "pronoun" in output.lower(), "The output doesn't contain a pronunciation guide."
 
@@ -306,6 +388,13 @@ def main():
                                     prompt=filled_template,
                                     temperature=float(st.session_state.temperature),
                                     max_tokens=int(st.session_state.max_tokens),
+                                    top_p=int(st.session_state.top_p),
+                                    presence_penalty=float(
+                                        st.session_state.presence_penalty
+                                    ),
+                                    frequency_penalty=float(
+                                        st.session_state.frequency_penalty
+                                    ),
                                 )
 
                                 # Capture the end time (toc) after getting the response
@@ -349,7 +438,7 @@ def main():
                                 st.markdown(
                                     f"Your test results are [here](https://app.aihero.studio/v1/tools/promptstash/projects/{AI_HERO_PROJECT_ID}/prompt_templates/{st.session_state.template_id}/variants/{st.session_state.current_variant}/test_suites/{test_template_id}/test_runs/{test_run_id})"
                                 )
-                                st.markdown(f"{summary}")
+                                st.markdown(f"~~~{summary}~~~")
 
             except Exception as exc:  # pylint: disable=broad-except
                 st.error(f"An error occurred: {exc}")

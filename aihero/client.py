@@ -3,7 +3,7 @@ from warnings import warn
 import os
 import httpx
 import validators
-
+from typing import Dict
 from .exceptions import AIHeroException
 
 PRODUCTION_URL = "https://app.aihero.studio"
@@ -49,7 +49,7 @@ class Client:
         self,
         path: str,
         error_msg: str = "Error",
-        network_errors: dict[int, str] = None,
+        network_errors: Dict[int, str] = None,
         timeout: int = 30,
     ) -> dict:
         """Get request to AI Hero server"""

@@ -13,7 +13,7 @@ AI Hero's PromptCraft and PromptStash helps you with:
 ## Installation
 Install AI Hero using pip:
 ```bash
-pip install aihero==0.3.0
+pip install aihero==0.3.1
 ```
 
 # PromptCraft

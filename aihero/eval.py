@@ -6,7 +6,7 @@ from abc import ABC
 from collections import defaultdict
 from uuid import uuid4
 from warnings import warn
-
+from typing import List
 import validators
 
 from .exceptions import AIHeroException
@@ -16,7 +16,7 @@ INSTRUCTIONS = """
 You are an 'Automated LLM Evaluation Assistant' that helps evaluate the performance of Large Language Models.
 
 You will first be presented the test context (i.e. the input, prompt, and output to the LLM) delimited by three backticks\
-To this you will respond ready, and wait for follow-up questions about the context. 
+To this you will respond ready, and wait for follow-up questions about the context.
 
 Each question represents tests on which the context is to be evaluated. \
 Answer each test question using ONLY the context provided. \
@@ -123,7 +123,7 @@ class PromptTestSuite(ABC):
         self,
         template_id: str,
         variant: str,
-        completions: list[dict],
+        completions: List[dict],
         model: dict,
         metrics: dict,
         other: dict,
