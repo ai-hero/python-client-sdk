@@ -1,14 +1,18 @@
-import streamlit as st
-import openai
-import re
-from dotenv import load_dotenv
 import os
-from aihero import promptstash
-from uuid import uuid4
-from datetime import date
+import re
 import time
 from copy import deepcopy
+from datetime import date
+from uuid import uuid4
+
+import openai
+import httpx
 import pandas as pd
+import streamlit as st
+import validators
+from dotenv import load_dotenv
+
+from aihero import promptstash
 from aihero.eval import PromptTestSuite
 
 # Construct the path to the .env file in the current working directory
@@ -51,7 +55,8 @@ st.set_page_config(layout="wide")
 
 # Function to extract f-string variables
 def extract_fstring_variables(template):
-    return re.findall(r"\{(\w+)\}", template)
+    """Extracts f-string variables from a template string."""
+    return list(set(re.findall(r"\{(\w+)\}", template)))
 
 
 # CSS to expand the sidebar width
@@ -142,6 +147,54 @@ def main():
             )
 
         st.sidebar.divider()
+
+        # Advanced RAG collapsible section in the sidebar
+        with st.sidebar.expander(
+            "Retrieval Augmented Generation (optional)", expanded=False
+        ):
+            st.write("**Optional: Settings for RAG:**")
+            st.write(
+                "Point to an API server that takes a JSON object of your inputs, and returns context as JSON."
+            )
+            st.session_state.use_rag = st.checkbox(
+                "Use RAG from server", False, key="30"
+            )
+            if st.session_state.use_rag:
+                st.session_state.rag_inputs = []
+                # Host
+                st.session_state.rag_server = st.text_input(
+                    "RAG Host:", "http://127.0.0.1:5000", key="31"
+                )
+                try:
+                    # assert is url
+                    validators.url(st.session_state.rag_server)
+                except validators.ValidationFailure:
+                    st.error(f"'{st.session_state.rag_server}' is not a valid URL.")
+                    st.stop()
+
+                # Host
+                st.session_state.rag_cs_inputs = st.text_input(
+                    "Input variables to the RAG service (comma separated list of vars):",
+                    "text",
+                    key="32",
+                )
+                try:
+                    # Parsing the input string into a list of values
+                    values = []
+                    for value in st.session_state.rag_cs_inputs.split(","):
+                        if value.strip():
+                            values.append(value)
+
+                    # Validating the values (Here, we are just checking if they are non-empty and are alphanumeric)
+                    for value in values:
+                        assert value and value.isalnum()
+
+                    st.session_state.rag_inputs = values
+                except AssertionError:
+                    st.error(
+                        f"'{st.session_state.rag_cs_inputs}' is not a valid comma separated list of variables."
+                    )
+                    st.stop()
 
         # Advanced settings within a collapsible section in the sidebar
         with st.sidebar.expander("Settings", expanded=False):
@@ -262,10 +315,19 @@ def main():
     variables = extract_fstring_variables(st.session_state.template[0]["content"])
     st.session_state.user_inputs = {}
     for var in variables:
-        st.session_state.user_inputs[var] = st.text_input(
-            f"Enter value for {var}",
-            key=f"input_{var}",
-        )
+        if st.session_state.use_rag is True:
+            if var in st.session_state.rag_inputs:
+                st.session_state.user_inputs[var] = st.text_input(
+                    f"Enter value for {var}",
+                    key=f"input_{var}",
+                )
+            else:
+                st.text(f"Expecting '{var}' in retrieved context.")
+        else:
+            st.session_state.user_inputs[var] = st.text_input(
+                f"Enter value for {var}",
+                key=f"input_{var}",
+            )
 
     # Initialize chat history
     if "messages" not in st.session_state:
@@ -276,6 +338,56 @@ def main():
     if st.button("Restart"):
         st.session_state.messages.clear()
         st.session_state.trace_id = str(uuid4())
+
+    # Check if inputs are present
+    for var in variables:
+        if st.session_state.use_rag:
+            if (
+                var in st.session_state.rag_inputs
+                and not st.session_state.user_inputs[var].strip()
+            ):
+                st.error(f"Missing value for variable '{var}'")
+                st.stop()
+        else:
+            if not st.session_state.user_inputs[var].strip():
+                st.error(f"Missing value for variable '{var}'")
+                st.stop()
+
+    # Retrieve the context
+    if st.session_state.use_rag is True:
+        # Using HTTPX to send a POST request
+        with httpx.Client() as client:
+            r = client.post(
+                st.session_state.rag_server,
+                json=st.session_state.user_inputs,
+            )
+
+        # Checking if the request was successful
+        if r.status_code == 200:
+            st.session_state.user_inputs.update(r.json())
+        else:
+            st.error(f"Failed with status code {r.status_code}: {r.text}")
+            st.stop()
+
+    # Check if retrieved context are present
+    for var in variables:
+        if st.session_state.use_rag:
+            if (
+                var in st.session_state.rag_inputs
+                and not st.session_state.user_inputs[var].strip()
+            ):
+                st.error(f"Missing value for variable '{var}'")
+                st.stop()
+            elif (
+                var not in st.session_state.user_inputs
+                or not st.session_state.user_inputs[var].strip()
+            ):
+                st.error(f"Missing value for variable '{var}'")
+                st.stop()
+        else:
+            if not st.session_state.user_inputs[var].strip():
+                st.error(f"Missing value for variable '{var}'")
+                st.stop()
 
     if not st.session_state.messages:
         st.session_state.template[0]["content"] = st.session_state.template[0][
@@ -318,7 +430,7 @@ def main():
 
                 step_id = str(uuid4())
                 inputs = st.session_state.user_inputs
-                rendered_inputs = "\n".join([f"{k}: {v}" for k, v in inputs.items()])
+                rendered_inputs = "\n\n".join([f"{k}: {v}" for k, v in inputs.items()])
 
                 ps.stash_completion(
                     trace_id=st.session_state.trace_id,
@@ -385,18 +497,9 @@ def main():
                 if uploaded_file:
                     data = pd.read_csv(uploaded_file)
 
-                    # Check if all required columns exist in the uploaded CSV
-                    missing_columns = [
-                        var for var in variables if var not in data.columns
-                    ]
-
                     if "chat" not in data.columns:
                         st.error(
                             f"Uploaded CSV is missing the following columns: {', '.join(['chat'])}"
-                        )
-                    elif missing_columns:
-                        st.error(
-                            f"Uploaded CSV is missing the following columns: {', '.join(missing_columns)}"
                         )
                     else:
                         st.success("CSV file successfully uploaded and columns match!")
@@ -407,7 +510,76 @@ def main():
                             times = []
                             for index, row in data.iterrows():
                                 # Update session state user_inputs for the current row
-                                st.session_state.user_inputs = row.to_dict()
+                                row_inputs = row.to_dict()
+                                row_inputs.update(st.session_state.user_inputs)
+
+                                # Check if inputs are present
+                                for var in variables:
+                                    if st.session_state.use_rag:
+                                        if (
+                                            var in st.session_state.rag_inputs
+                                            and not row_inputs[var].strip()
+                                        ):
+                                            st.error(
+                                                f"Missing value for variable '{var}'"
+                                            )
+                                            st.stop()
+                                    else:
+                                        if (
+                                            var not in row_inputs
+                                            or not row_inputs[var].strip()
+                                        ):
+                                            st.error(
+                                                f"Missing value for variable '{var}'"
+                                            )
+                                            st.stop()
+
+                                # Retrieve the context
+                                if st.session_state.use_rag is True:
+                                    # Using HTTPX to send a POST request
+                                    with httpx.Client() as client:
+                                        r = client.post(
+                                            st.session_state.rag_server,
+                                            json=st.session_state.user_inputs,
+                                        )
+
+                                    # Checking if the request was successful
+                                    if r.status_code == 200:
+                                        st.session_state.user_inputs.update(r.json())
+                                    else:
+                                        st.error(
+                                            f"Failed with status code {r.status_code}: {r.text}"
+                                        )
+                                        st.stop()
+
+                                # Check if retrieved context are present
+                                for var in variables:
+                                    if st.session_state.use_rag:
+                                        if (
+                                            var in st.session_state.rag_inputs
+                                            and not st.session_state.user_inputs[
+                                                var
+                                            ].strip()
+                                        ):
+                                            st.error(
+                                                f"Missing value for variable '{var}'"
+                                            )
+                                            st.stop()
+                                        elif not st.session_state.user_inputs[
+                                            var
+                                        ].strip():
+                                            st.error(
+                                                f"Missing value for variable '{var}'"
+                                            )
+                                            st.stop()
+                                    else:
+                                        if not st.session_state.user_inputs[
+                                            var
+                                        ].strip():
+                                            st.error(
+                                                f"Missing value for variable '{var}'"
+                                            )
+                                            st.stop()
 
                                 st.session_state.template[0][
                                     "content"
@@ -419,7 +591,7 @@ def main():
                                 )
 
                                 inputs = st.session_state.user_inputs
-                                rendered_inputs = "\n".join(
+                                rendered_inputs = "\n\n".join(
                                     [f"{k}: {v}" for k, v in inputs.items()]
                                 )
 
@@ -448,15 +620,19 @@ def main():
                                 toc = time.perf_counter()
 
                                 # Displaying the completion as text for each row
-                                st.markdown(f"**Row {index + 1}:**")
-                                st.text("Inputs: ")
-                                st.markdown(f"{rendered_inputs}")
-                                st.text("Completion: ")
+                                st.header(f"Row {index + 1}:")
+                                st.subheader("Inputs: ")
                                 st.markdown(
-                                    f"{completion.choices[0].message['content']}"
+                                    "\n\n".join(
+                                        [
+                                            f"{msg['role']}: {msg['content']}"
+                                            for msg in test_messages
+                                        ]
+                                    )
                                 )
+                                st.subheader("Completion: ")
+                                st.markdown(completion.choices[0].message["content"])
 
-                                output = completion.choices[0].message["content"]
                                 this_time = toc - tic
 
                                 completions.append(
@@ -464,7 +640,7 @@ def main():
                                         "inputs": inputs,
                                         "rendered_inputs": rendered_inputs,
                                         "prompt": st.session_state.messages,
-                                        "output": output,
+                                        "output": completion.choices[0].message,
                                     }
                                 )
                                 times.append(this_time)

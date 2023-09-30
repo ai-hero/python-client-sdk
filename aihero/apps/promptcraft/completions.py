@@ -1,15 +1,19 @@
-import streamlit as st
-import openai
-import re
-from dotenv import load_dotenv
 import os
-from aihero import promptstash
-from uuid import uuid4
-from datetime import date
+import re
 import time
-import pandas as pd
-from aihero.eval import PromptTestSuite
+from datetime import date
+from uuid import uuid4
 
+import openai
+import httpx
+import pandas as pd
+import streamlit as st
+import validators
+from dotenv import load_dotenv
+from text_generation import Client
+
+from aihero import promptstash
+from aihero.eval import PromptTestSuite
 
 # Construct the path to the .env file in the current working directory
 env_path = os.path.join(os.getcwd(), ".env")
@@ -21,9 +25,6 @@ load_dotenv(dotenv_path=env_path)
 if not os.path.exists(".env"):
     st.error(
         "Error: .env file is missing. Please ensure you have a .env file with the required keys."
-    )
-    st.write(
-        "Get the necessary keys from [OpenAI](https://openai.com) or [AI Hero](https://app.aihero.studio)"
     )
     st.stop()
 
@@ -51,6 +52,7 @@ st.set_page_config(layout="wide")
 
 # Function to extract f-string variables
 def extract_fstring_variables(template):
+    """Extracts f-string variables from a template string."""
     return re.findall(r"\{(\w+)\}", template)
 
 
@@ -76,7 +78,7 @@ def main():
     st.sidebar.markdown("This app is powered by [AI Hero](https://app.aihero.studio).")
     # Using Sidebar for Prompt Template and Settings
     st.sidebar.write("**Step 1: Prompt Template:**")
-
+    st.session_state.model_set = False
     st.session_state.template_id = st.sidebar.text_input(
         "Template ID:", "english-to-japanese", key="4"
     )
@@ -105,7 +107,7 @@ def main():
                     template_id=st.session_state.template_id
                 )
             except Exception:  # pylint: disable=broad-except
-                st.session_state.current_template = """Translate the following text into Japanese:\n{text}\n\nTranslation:"""
+                st.session_state.current_template = """Translate the following text into Japanese.\nText: {text}\nTranslation: """
 
         st.sidebar.divider()
         st.sidebar.write("**Step 2: Enter a Prompt Template:**")
@@ -130,16 +132,84 @@ def main():
 
         st.sidebar.divider()
 
+        # Advanced RAG collapsible section in the sidebar
+        with st.sidebar.expander(
+            "Retrieval Augmented Generation (optional)", expanded=False
+        ):
+            st.write("**Optional: Settings for RAG:**")
+            st.write(
+                "Point to an API server that takes a JSON object of your inputs, and returns context as JSON."
+            )
+            st.session_state.use_rag = st.checkbox(
+                "Use RAG from server", False, key="30"
+            )
+            if st.session_state.use_rag:
+                st.session_state.rag_inputs = []
+                # Host
+                st.session_state.rag_server = st.text_input(
+                    "RAG Host:", "http://127.0.0.1:5000", key="31"
+                )
+                try:
+                    # assert is url
+                    validators.url(st.session_state.rag_server)
+                except validators.ValidationFailure:
+                    st.error(f"'{st.session_state.rag_server}' is not a valid URL.")
+                    st.stop()
+
+                # Host
+                st.session_state.rag_cs_inputs = st.text_input(
+                    "Input variables to the RAG service (comma separated list of vars):",
+                    "text",
+                    key="32",
+                )
+                try:
+                    # Parsing the input string into a list of values
+                    values = []
+                    for value in st.session_state.rag_cs_inputs.split(","):
+                        if value.strip():
+                            values.append(value)
+
+                    # Validating the values (Here, we are just checking if they are non-empty and are alphanumeric)
+                    for value in values:
+                        assert value and value.isalnum()
+
+                    st.session_state.rag_inputs = values
+                except AssertionError:
+                    st.error(
+                        f"'{st.session_state.rag_cs_inputs}' is not a valid comma separated list of variables."
+                    )
+                    st.stop()
+
         # Advanced settings within a collapsible section in the sidebar
         with st.sidebar.expander("Settings", expanded=False):
             st.write("**Optional:**")
             st.write("**Advanced model and query settings:**")
+            st.session_state.OPENAI_MODELS = ["text-davinci-003", "text-davinci-002"]
+            selections = []
+            selections.extend(st.session_state.OPENAI_MODELS)
+            selections.append("private-tgi")
             st.session_state.engine = st.selectbox(
                 "Model name:",
-                ["text-davinci-003", "text-davinci-002", "code-davinci-002"],
+                selections,
                 index=0,
                 key="2",
             )
+
+            if st.session_state.engine in st.session_state.OPENAI_MODELS:
+                if "OPENAI_API_KEY" not in os.environ:
+                    st.error(
+                        (
+                            "Error: Missing key OPENAI_API_KEY in .env file: "
+                            "Get the necessary keys from [OpenAI](https://openai.com)"
+                        )
+                    )
+                else:
+                    st.session_state.model_set = True
+            elif st.session_state.engine == "private-tgi":
+                st.session_state.host = st.text_input(
+                    "Host:", "http://localhost:8081", key="25"
+                )
+                st.session_state.model_set = True
 
             # Temperature
             st.session_state.temperature = st.text_input(
@@ -185,52 +255,63 @@ def main():
                 )
                 st.stop()
 
-            # Presence Penalty
-            st.session_state.presence_penalty = st.text_input(
-                "Presence Penalty (from -2 to 2):", "0", key="16"
-            )
-            try:
-                assert (
-                    float(st.session_state.presence_penalty) >= -2
-                    and float(st.session_state.presence_penalty) <= 2
-                )
-            except (ValueError, AssertionError):
-                st.error(
-                    f"'{st.session_state.presence_penalty}' is not a valid presence penalty. It should be a number between -2 and 2."
-                )
-                st.stop()
-
-            # Frequency Penalty
-            st.session_state.frequency_penalty = st.text_input(
-                "Frequency Penalty (from -2 to 2):", "0", key="17"
-            )
-            try:
-                assert (
-                    float(st.session_state.frequency_penalty) >= -2
-                    and float(st.session_state.frequency_penalty) <= 2
-                )
-            except (ValueError, AssertionError):
-                st.error(
-                    f"'{st.session_state.frequency_penalty}' is not a valid frequency penalty. It should be a number between -2 and 2."
-                )
-                st.stop()
-
             st.session_state.model = {
                 "name": st.session_state.engine,
                 "engine": st.session_state.engine,
                 "temperature": float(st.session_state.temperature),
                 "max_tokens": int(st.session_state.max_tokens),
                 "top_p": float(st.session_state.top_p),
-                "presence_penalty": float(st.session_state.presence_penalty),
-                "frequency_penalty": float(st.session_state.frequency_penalty),
                 "version": date.today().strftime("%Y-%m-%d"),
             }
+
+            if st.session_state.engine in st.session_state.OPENAI_MODELS:
+                # Presence Penalty
+                st.session_state.presence_penalty = st.text_input(
+                    "Presence Penalty (from -2 to 2):", "0", key="16"
+                )
+                try:
+                    assert (
+                        float(st.session_state.presence_penalty) >= -2
+                        and float(st.session_state.presence_penalty) <= 2
+                    )
+                except (ValueError, AssertionError):
+                    st.error(
+                        f"'{st.session_state.presence_penalty}' is not a valid presence penalty. It should be a number between -2 and 2."
+                    )
+                    st.stop()
+
+                # Frequency Penalty
+                st.session_state.frequency_penalty = st.text_input(
+                    "Frequency Penalty (from -2 to 2):", "0", key="17"
+                )
+                try:
+                    assert (
+                        float(st.session_state.frequency_penalty) >= -2
+                        and float(st.session_state.frequency_penalty) <= 2
+                    )
+                except (ValueError, AssertionError):
+                    st.error(
+                        f"'{st.session_state.frequency_penalty}' is not a valid frequency penalty. It should be a number between -2 and 2."
+                    )
+                    st.stop()
+
+                st.session_state.model["presence_penalty"] = (
+                    float(st.session_state.presence_penalty),
+                )
+                st.session_state.model["frequency_penalty"] = (
+                    float(st.session_state.frequency_penalty),
+                )
 
     st.title("PromptCraft using OpenAI Completions API")
     st.markdown(
         "PromptCraft, by AI Hero, is the fastest way for product managers and prompt engineers to iterate on a prompt and share it with their engineering team. Working along-side PromptStash, PromptCraft allows you to collaboratively develop, refine, and test prompts. Once ready, your engineering team can retrieve your best prompt template using PromptStash and deploy it to production."
     )
-    if not st.session_state.template_id.strip():
+    if not st.session_state.model_set:
+        st.warning(
+            "Please select a model in the sidebar on the left. You can also change the default settings."
+        )
+        st.stop()
+    elif not st.session_state.template_id.strip():
         st.warning("Please enter a template ID in the sidebar on the left.")
     elif not st.session_state.template.strip():
         st.warning("Please enter your prompt template in the sidebar on the left.")
@@ -240,10 +321,19 @@ def main():
             variables = extract_fstring_variables(st.session_state.template)
             st.session_state.user_inputs = {}
             for var in variables:
-                st.session_state.user_inputs[var] = st.text_input(
-                    f"Enter value for {var}",
-                    key=f"input_{var}",
-                )
+                if st.session_state.use_rag is True:
+                    if var in st.session_state.rag_inputs:
+                        st.session_state.user_inputs[var] = st.text_input(
+                            f"Enter value for {var}",
+                            key=f"input_{var}",
+                        )
+                    else:
+                        st.text(f"Expecting '{var}' in retrieved context.")
+                else:
+                    st.session_state.user_inputs[var] = st.text_input(
+                        f"Enter value for {var}",
+                        key=f"input_{var}",
+                    )
 
             # Spacing
             st.text("")
@@ -252,42 +342,114 @@ def main():
             if st.button("Generate"):
                 # Indicate process is running
                 with st.spinner("Running..."):
+                    # Check if inputs are present
+                    for var in variables:
+                        if st.session_state.use_rag:
+                            if (
+                                var in st.session_state.rag_inputs
+                                and not st.session_state.user_inputs[var].strip()
+                            ):
+                                st.error(f"Missing value for variable '{var}'")
+                                st.stop()
+                        else:
+                            if not st.session_state.user_inputs[var].strip():
+                                st.error(f"Missing value for variable '{var}'")
+                                st.stop()
+
+                    # Retrieve the context
+                    if st.session_state.use_rag is True:
+                        # Using HTTPX to send a POST request
+                        with httpx.Client() as client:
+                            r = client.post(
+                                st.session_state.rag_server,
+                                json=st.session_state.user_inputs,
+                            )
+
+                        # Checking if the request was successful
+                        if r.status_code == 200:
+                            st.session_state.user_inputs.update(r.json())
+                        else:
+                            st.error(
+                                f"Failed with status code {r.status_code}: {r.text}"
+                            )
+                            st.stop()
+
+                    # Check if retrieved context are present
+                    for var in variables:
+                        if st.session_state.use_rag:
+                            if (
+                                var in st.session_state.rag_inputs
+                                and not st.session_state.user_inputs[var].strip()
+                            ):
+                                st.error(f"Missing value for variable '{var}'")
+                                st.stop()
+                            elif (
+                                var not in st.session_state.user_inputs
+                                or not st.session_state.user_inputs[var].strip()
+                            ):
+                                st.error(f"Missing value for variable '{var}'")
+                                st.stop()
+                        else:
+                            if not st.session_state.user_inputs[var].strip():
+                                st.error(f"Missing value for variable '{var}'")
+                                st.stop()
+
                     trace_id = str(uuid4())
                     step_id = str(uuid4())
                     filled_template = st.session_state.template.format(
                         **st.session_state.user_inputs
                     )
                     prompt = filled_template
+
                     inputs = st.session_state.user_inputs
-                    rendered_inputs = "\n".join(
+                    rendered_inputs = "\n\n".join(
                         [f"{k}: {v}" for k, v in inputs.items()]
                     )
 
                     # Capture the start time (tic) right before making the API call
                     tic = time.perf_counter()
 
-                    # Get completion from OpenAI API
-                    response = openai.Completion.create(
-                        engine=st.session_state.engine,
-                        prompt=filled_template,
-                        temperature=float(st.session_state.temperature),
-                        max_tokens=int(st.session_state.max_tokens),
-                        top_p=int(st.session_state.top_p),
-                        presence_penalty=float(st.session_state.presence_penalty),
-                        frequency_penalty=float(st.session_state.frequency_penalty),
-                    )
+                    if st.session_state.engine == "private-tgi":
+                        client = Client("http://127.0.0.1:8081")
+                        top_p_tgi = float(st.session_state.top_p)
+                        if top_p_tgi >= 1:
+                            top_p_tgi = 0.99
+                        response = client.generate(
+                            filled_template,
+                            temperature=float(st.session_state.temperature),
+                            max_new_tokens=int(st.session_state.max_tokens),
+                            top_p=top_p_tgi,
+                        )
+                        # if not response.token.special:
+                        #     text += response.token.text
+                        output = response.generated_text.encode("utf-8").decode("utf-8")
+                        usage = {
+                            "generated_tokens": response.details.generated_tokens,
+                            "seed": response.details.seed,
+                        }
+                    elif st.session_state.engine in st.session_state.OPENAI_MODELS:
+                        # Get completion from OpenAI API
+                        response = openai.Completion.create(
+                            engine=st.session_state.engine,
+                            prompt=filled_template,
+                            temperature=float(st.session_state.temperature),
+                            max_tokens=int(st.session_state.max_tokens),
+                            top_p=float(st.session_state.top_p),
+                            presence_penalty=float(st.session_state.presence_penalty),
+                            frequency_penalty=float(st.session_state.frequency_penalty),
+                        )
+                        output = response.choices[0].text
+                        usage = response.usage
 
                     # Capture the end time (toc) after getting the response
                     toc = time.perf_counter()
+                    print(f"Time taken: {toc - tic}")
 
                     # Displaying the completion as text
-                    st.markdown("**Result:**")
-                    st.text("Inputs: ")
-                    st.markdown(f"{rendered_inputs}")
-                    st.text("Completion: ")
-                    st.markdown(f"{response.choices[0].text}")
-
-                    output = response.choices[0].text
+                    st.subheader("Prompt: ")
+                    st.markdown(filled_template)
+                    st.subheader("Completion: ")
+                    st.markdown(output)
 
                     ps.stash_completion(
                         trace_id=trace_id,
@@ -300,7 +462,7 @@ def main():
                         rendered_inputs=rendered_inputs,
                         model=st.session_state.model,
                         metrics={"time": (toc - tic)},
-                        other={"usage": response.usage},
+                        other={"usage": usage},
                     )
 
                     st.markdown(
@@ -351,9 +513,17 @@ def main():
                     data = pd.read_csv(uploaded_file)
 
                     # Check if all required columns exist in the uploaded CSV
-                    missing_columns = [
-                        var for var in variables if var not in data.columns
-                    ]
+                    missing_columns = []
+                    for var in variables:
+                        if st.session_state.use_rag:
+                            if (
+                                var in st.session_state.rag_inputs
+                                and var not in data.columns
+                            ):
+                                missing_columns.append(var)
+                        else:
+                            if var not in data.columns:
+                                missing_columns.append(var)
 
                     if missing_columns:
                         st.error(
@@ -370,44 +540,138 @@ def main():
                                 # Update session state user_inputs for the current row
                                 st.session_state.user_inputs = row.to_dict()
 
+                                # Check if inputs are present
+                                for var in variables:
+                                    if st.session_state.use_rag:
+                                        if (
+                                            var in st.session_state.rag_inputs
+                                            and not st.session_state.user_inputs[
+                                                var
+                                            ].strip()
+                                        ):
+                                            st.error(
+                                                f"Missing value for variable '{var}'"
+                                            )
+                                            st.stop()
+                                    else:
+                                        if not st.session_state.user_inputs[
+                                            var
+                                        ].strip():
+                                            st.error(
+                                                f"Missing value for variable '{var}'"
+                                            )
+                                            st.stop()
+
+                                # Retrieve the context
+                                if st.session_state.use_rag is True:
+                                    # Using HTTPX to send a POST request
+                                    with httpx.Client() as client:
+                                        r = client.post(
+                                            st.session_state.rag_server,
+                                            json=st.session_state.user_inputs,
+                                        )
+
+                                    # Checking if the request was successful
+                                    if r.status_code == 200:
+                                        st.session_state.user_inputs.update(r.json())
+                                    else:
+                                        st.error(
+                                            f"Failed with status code {r.status_code}: {r.text}"
+                                        )
+                                        st.stop()
+
+                                # Check if retrieved context are present
+                                for var in variables:
+                                    if st.session_state.use_rag:
+                                        if (
+                                            var in st.session_state.rag_inputs
+                                            and not st.session_state.user_inputs[
+                                                var
+                                            ].strip()
+                                        ):
+                                            st.error(
+                                                f"Missing value for variable '{var}'"
+                                            )
+                                            st.stop()
+                                        elif not st.session_state.user_inputs[
+                                            var
+                                        ].strip():
+                                            st.error(
+                                                f"Missing value for variable '{var}'"
+                                            )
+                                            st.stop()
+                                    else:
+                                        if not st.session_state.user_inputs[
+                                            var
+                                        ].strip():
+                                            st.error(
+                                                f"Missing value for variable '{var}'"
+                                            )
+                                            st.stop()
+
                                 filled_template = st.session_state.template.format(
                                     **st.session_state.user_inputs
                                 )
                                 prompt = filled_template
                                 inputs = st.session_state.user_inputs
-                                rendered_inputs = "\n".join(
+                                rendered_inputs = "\n\n".join(
                                     [f"{k}: {v}" for k, v in inputs.items()]
                                 )
 
                                 # Capture the start time (tic) right before making the API call
                                 tic = time.perf_counter()
 
-                                # Get completion from OpenAI API
-                                response = openai.Completion.create(
-                                    engine=st.session_state.engine,
-                                    prompt=filled_template,
-                                    temperature=float(st.session_state.temperature),
-                                    max_tokens=int(st.session_state.max_tokens),
-                                    top_p=int(st.session_state.top_p),
-                                    presence_penalty=float(
-                                        st.session_state.presence_penalty
-                                    ),
-                                    frequency_penalty=float(
-                                        st.session_state.frequency_penalty
-                                    ),
-                                )
+                                if st.session_state.engine == "private-tgi":
+                                    client = Client("http://127.0.0.1:8081")
+                                    top_p_tgi = float(st.session_state.top_p)
+                                    if top_p_tgi >= 1:
+                                        top_p_tgi = 0.99
+                                    response = client.generate(
+                                        filled_template,
+                                        temperature=float(st.session_state.temperature),
+                                        max_new_tokens=int(st.session_state.max_tokens),
+                                        top_p=top_p_tgi,
+                                    )
+                                    # if not response.token.special:
+                                    #     text += response.token.text
+                                    output = response.generated_text.encode(
+                                        "utf-8"
+                                    ).decode("utf-8")
+                                    usage = {
+                                        "generated_tokens": response.details.generated_tokens,
+                                        "seed": response.details.seed,
+                                    }
+                                elif (
+                                    st.session_state.engine
+                                    in st.session_state.OPENAI_MODELS
+                                ):
+                                    # Get completion from OpenAI API
+                                    response = openai.Completion.create(
+                                        engine=st.session_state.engine,
+                                        prompt=filled_template,
+                                        temperature=float(st.session_state.temperature),
+                                        max_tokens=int(st.session_state.max_tokens),
+                                        top_p=float(st.session_state.top_p),
+                                        presence_penalty=float(
+                                            st.session_state.presence_penalty
+                                        ),
+                                        frequency_penalty=float(
+                                            st.session_state.frequency_penalty
+                                        ),
+                                    )
+                                    output = response.choices[0].text
+                                    usage = response.usage
 
                                 # Capture the end time (toc) after getting the response
                                 toc = time.perf_counter()
 
                                 # Displaying the completion as text for each row
-                                st.markdown(f"**Row {index + 1}:**")
-                                st.text("Inputs: ")
-                                st.markdown(f"{rendered_inputs}")
-                                st.text("Completion: ")
-                                st.markdown(f"{response.choices[0].text}")
+                                st.header(f"Row {index + 1}:")
+                                st.subheader("Prompt: ")
+                                st.markdown(filled_template)
+                                st.subheader("Completion: ")
+                                st.markdown(output)
 
-                                output = response.choices[0].text
                                 this_time = toc - tic
 
                                 completions.append(

@@ -15,23 +15,19 @@ from .openai_helper import ChatCompletion, get_embedding, has_key
 INSTRUCTIONS = """
 You are an 'Automated LLM Evaluation Assistant' that helps evaluate the performance of Large Language Models.
 
-You will first be presented the test context (i.e. the input, prompt, and output to the LLM) delimited by three backticks\
-To this you will respond ready, and wait for follow-up questions about the context.
-
-Each question represents tests on which the context is to be evaluated. \
-Answer each test question using ONLY the context provided. \
-You should return `PASS` if the answer to the test question is in the affirmative and `FAIL` if the answer to the test question is negative. \
+You will first be presented the output.
+To this you will respond ready, and wait for follow-up questions to test the output.
+Answer each test question using ONLY the output provided, independent from other questions. \
+You should return `PASS` if the answer to the test question is in the affirmative or neutral and `FAIL` if the answer to the test question is definitely negative. \
 You should also provide a reason for the failure, but make sure your response starts with `PASS:` or `FAIL:`
 """
 
 TEST_TEXT_TEMPLATE = """
-Input: ```
-{rendered_inputs}
-```
-
-Output: ```
+Output:
 {output}
-```
+
+Question:
+{question}
 """
 
 
@@ -127,7 +123,6 @@ class PromptTestSuite(ABC):
         model: dict,
         metrics: dict,
         other: dict,
-        test_text_template=TEST_TEXT_TEMPLATE,
     ):
         """Run a test suite."""
         assert template_id, "Please provide a template_id"
@@ -190,15 +185,9 @@ class PromptTestSuite(ABC):
 
         for completion in completions:
             print(f"Test Case: '{completion['rendered_inputs']}'")
-            rendered_inputs, output = (
-                completion["rendered_inputs"],
-                completion["output"],
-            )
+            output = completion["output"]
             if isinstance(output, dict):
                 output = output["content"]
-            context = test_text_template.format(
-                rendered_inputs=rendered_inputs, output=output
-            )
             evaluator = None
             method_list = inspect.getmembers(self, predicate=inspect.ismethod)
             test_cases = {}
@@ -241,25 +230,13 @@ class PromptTestSuite(ABC):
                             evaluator = ChatCompletion(
                                 system_message=self._instructions
                             )
-                            ready, error = evaluator.chat("```" + context + "```")
-                            if error:
-                                test_cases[method_name] = {
-                                    "errored": True,
-                                    "error": error,
-                                }
-                            else:
-                                try:
-                                    assert "ready" in ready.lower()
-                                except AssertionError:
-                                    traceback.print_exc()
-                                    test_cases[method_name] = {
-                                        "errored": True,
-                                        "error": "Could not initialize evaluator. Not ready.",
-                                    }
                         if evaluator:
-                            ask = method_object()
+                            question = method_object()
                             try:
-                                response, error = evaluator.chat(ask)
+                                test_question = TEST_TEXT_TEMPLATE.format(
+                                    output=output, question=question
+                                )
+                                response, error = evaluator.chat(test_question)
                                 if error:
                                     test_cases[method_name] = {
                                         "errored": True,
@@ -272,14 +249,14 @@ class PromptTestSuite(ABC):
                                         passed = False
                                     else:
                                         raise AIHeroException(
-                                            ask
+                                            question
                                             + " - did not return pass/fail"
                                             + response
                                         )
                                     test_cases[method_name] = {
                                         "errored": False,
                                         "passed": passed,
-                                        "asked": ask,
+                                        "asked": question,
                                         "details": response,
                                     }
                             except Exception as exc:  # pylint: disable=broad-except
