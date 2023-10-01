@@ -604,7 +604,7 @@ def main():
                         st.markdown(
                             "\n\n".join(
                                 [
-                                    f"{msg['role']}: {msg['content']}"
+                                    f"**{msg['role']}:** {msg['content']}"
                                     for msg in test_messages
                                 ]
                             )
