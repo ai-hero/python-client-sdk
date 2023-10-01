@@ -1,37 +1,30 @@
 """Evaluation module for AIHero."""
-import inspect
+import re
 from io import StringIO
 import traceback
 from abc import ABC
 from collections import defaultdict
 from uuid import uuid4
 from warnings import warn
-
+from typing import List
 import validators
 
 from .exceptions import AIHeroException
 from .openai_helper import ChatCompletion, get_embedding, has_key
 
 INSTRUCTIONS = """
-You are an 'Automated LLM Evaluation Assistant' that helps evaluate the performance of Large Language Models.
+You are an teaching assistant that helps evaluate texts for some expectation.
 
-You will first be presented the test context (i.e. the input, prompt, and output to the LLM) delimited by three backticks\
-To this you will respond ready, and wait for follow-up questions about the context. 
-
-Each question represents tests on which the context is to be evaluated. \
-Answer each test question using ONLY the context provided. \
-You should return `PASS` if the answer to the test question is in the affirmative and `FAIL` if the answer to the test question is negative. \
+For the text and the expectation, you will respond `PASS` if the expectation is met and `FAIL` if the expectation is not. \
 You should also provide a reason for the failure, but make sure your response starts with `PASS:` or `FAIL:`
 """
 
 TEST_TEXT_TEMPLATE = """
-Input: ```
-{rendered_inputs}
-```
+Text:
+{text}
 
-Output: ```
-{output}
-```
+Expectation:
+{expectation}
 """
 
 
@@ -123,11 +116,11 @@ class PromptTestSuite(ABC):
         self,
         template_id: str,
         variant: str,
-        completions: list[dict],
+        completions: List[dict],
+        expectations: List[List[str]],
         model: dict,
         metrics: dict,
         other: dict,
-        test_text_template=TEST_TEXT_TEMPLATE,
     ):
         """Run a test suite."""
         assert template_id, "Please provide a template_id"
@@ -167,6 +160,16 @@ class PromptTestSuite(ABC):
                         msg = completion[k]
                         assert "role" in msg, "Each message must have a role"
                         assert "content" in msg, "Each message must have a content"
+        assert expectations, "Please provide expectations"
+        assert isinstance(
+            expectations, list
+        ), "expectations must be a list[list[strings]]"
+        for expectation_list in expectations:
+            assert isinstance(
+                expectation_list, list
+            ), "Inner expectations list must be a list"
+            for expectation in expectation_list:
+                assert isinstance(expectation, str), "Expectation must be a string"
         assert model, "Please provide a model"
         assert isinstance(model, dict), "model must be a dict"
         assert "name" in model, "model must have a name"
@@ -190,111 +193,49 @@ class PromptTestSuite(ABC):
 
         for completion in completions:
             print(f"Test Case: '{completion['rendered_inputs']}'")
-            rendered_inputs, output = (
-                completion["rendered_inputs"],
-                completion["output"],
-            )
+            output = completion["output"]
             if isinstance(output, dict):
                 output = output["content"]
-            context = test_text_template.format(
-                rendered_inputs=rendered_inputs, output=output
-            )
-            evaluator = None
-            method_list = inspect.getmembers(self, predicate=inspect.ismethod)
-            test_cases = {}
-            for method_name, method_object in method_list:
-                if not method_name.startswith("test_") and not method_name.startswith(
-                    "ask_"
-                ):
-                    continue
 
-                # Run all test cases
-                print(f"Running {method_name}... ", end="")
-                passed = False
-                if method_name.startswith("test_"):
-                    # Run test case
-                    try:
-                        method_object(output)
-                        passed = True
-                        test_cases[method_name] = {
-                            "errored": False,
-                            "passed": passed,
-                        }
-                    except KeyboardInterrupt:
-                        break
-                    except AssertionError as assertion_error:
-                        test_cases[method_name] = {
-                            "errored": False,
-                            "passed": passed,
-                            "details": f"{assertion_error}",
-                        }
-                    except Exception as exception:  # pylint: disable=broad-except
-                        traceback.print_exc()
+            evaluator = ChatCompletion(system_message=self._instructions)
+            test_cases = {}
+
+            for expectation in expectations[0]:
+                method_name = re.sub(
+                    r"[^a-zA-Z0-9_]", "", expectation.lower().replace(" ", "_")
+                )
+                try:
+                    test_question = TEST_TEXT_TEMPLATE.format(
+                        text=output, expectation=expectation
+                    )
+                    response, error = evaluator.chat(test_question)
+                    if error:
                         test_cases[method_name] = {
                             "errored": True,
-                            "error": str(exception),
+                            "error": error,
                         }
-                elif method_name.startswith("ask_"):
-                    # Run test case
-                    if has_key():
-                        if evaluator is None:
-                            evaluator = ChatCompletion(
-                                system_message=self._instructions
-                            )
-                            ready, error = evaluator.chat("```" + context + "```")
-                            if error:
-                                test_cases[method_name] = {
-                                    "errored": True,
-                                    "error": error,
-                                }
-                            else:
-                                try:
-                                    assert "ready" in ready.lower()
-                                except AssertionError:
-                                    traceback.print_exc()
-                                    test_cases[method_name] = {
-                                        "errored": True,
-                                        "error": "Could not initialize evaluator. Not ready.",
-                                    }
-                        if evaluator:
-                            ask = method_object()
-                            try:
-                                response, error = evaluator.chat(ask)
-                                if error:
-                                    test_cases[method_name] = {
-                                        "errored": True,
-                                        "error": error,
-                                    }
-                                else:
-                                    if "PASS:" in response.upper():
-                                        passed = True
-                                    elif "FAIL:" in response.upper():
-                                        passed = False
-                                    else:
-                                        raise AIHeroException(
-                                            ask
-                                            + " - did not return pass/fail"
-                                            + response
-                                        )
-                                    test_cases[method_name] = {
-                                        "errored": False,
-                                        "passed": passed,
-                                        "asked": ask,
-                                        "details": response,
-                                    }
-                            except Exception as exc:  # pylint: disable=broad-except
-                                traceback.print_exc()
-                                test_cases[method_name] = {
-                                    "errored": True,
-                                    "error": str(exc),
-                                }
                     else:
-                        print(f"Skipping {method_name} as OPENAI_API_KEY is not set...")
+                        if "PASS" in response.upper():
+                            passed = True
+                        elif "FAIL" in response.upper():
+                            passed = False
+                        else:
+                            raise AIHeroException(
+                                expectation + " - did not return pass/fail: " + response
+                            )
                         test_cases[method_name] = {
-                            "errored": True,
-                            "error": "Skipping as OPENAI_API_KEY is not set...",
+                            "errored": False,
+                            "passed": passed,
+                            "asked": expectation,
+                            "details": response,
                         }
-                print("PASS" if passed else "FAIL")
+                except Exception as exc:  # pylint: disable=broad-except
+                    traceback.print_exc()
+                    test_cases[method_name] = {
+                        "errored": True,
+                        "error": str(exc),
+                    }
+
             tests.append(test_cases)
 
         passed_counts = defaultdict(int)
