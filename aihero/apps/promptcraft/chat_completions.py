@@ -467,7 +467,9 @@ def main():
     # Test Suite
     elif st.session_state.mode == "Evaluation":
         st.markdown(
-            "First, upload the tet suite CSV. The CSV should have only one column. Each row should be an expectation (question or statement) you expect of the prompt completion."
+            "First, upload the tet suite CSV. The CSV should have only one column. Each row should \
+            be an expectation (question or statement) you expect of the prompt completion. \
+            You can find an example [here](https://github.com/ai-hero/python-client-sdk/tree/main/examples/test_suite.csv)"
         )
         test_suite_file = st.file_uploader(
             "Upload test suite of expectations", type=["csv"]
@@ -491,7 +493,8 @@ def main():
 
         st.markdown(
             "Next, upload the tet cases CSV. The CSV should have one column for your inputs. Each row should be a test case. \
-            If you're using RAG, then you should only include your inputs and not the RAG returned values."
+            If you're using RAG, then you should only include your inputs and not the RAG returned values. \
+            You can find an example [here](https://github.com/ai-hero/python-client-sdk/tree/main/examples/j2e_chat.csv)"
         )
 
         # Upload CSV file

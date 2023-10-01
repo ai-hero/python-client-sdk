@@ -472,7 +472,9 @@ def main():
     # Test Suite
     with evaluation:
         st.markdown(
-            "First, upload the tet suite CSV. The CSV should have only one column. Each row should be an expectation (question or statement) you expect of the prompt completion."
+            "First, upload the tet suite CSV. The CSV should have only one column. Each row should \
+            be an expectation (question or statement) you expect of the prompt completion. \
+            You can find an example [here](https://github.com/ai-hero/python-client-sdk/tree/main/examples/test_suite.csv)"
         )
         test_suite_file = st.file_uploader(
             "Upload test suite of expectations", type=["csv"]
@@ -486,7 +488,8 @@ def main():
             st.error("Should only have one column.")
 
         expectations = [
-            [v for v in test_suite_df[col].astype(str).tolist() if v] for col in test_suite_df.columns
+            [v for v in test_suite_df[col].astype(str).tolist() if v]
+            for col in test_suite_df.columns
         ]
 
         test_template_id = f"{st.session_state.template_id}-test"
@@ -495,7 +498,8 @@ def main():
 
         st.markdown(
             "Next, upload the tet cases CSV. The CSV should have one column for your inputs. Each row should be a test case. \
-            If you're using RAG, then you should only include your inputs and not the RAG returned values."
+            If you're using RAG, then you should only include your inputs and not the RAG returned values. \
+            You can find an example [here](https://github.com/ai-hero/python-client-sdk/tree/main/examples/j2e.csv)"
         )
 
         # Upload CSV file
