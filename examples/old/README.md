@@ -1,0 +1,8 @@
+# PromptStash
+In the rapidly evolving world of AI, the ability to manage and control versions of prompts becomes incredibly important. Much like software version control, prompt versioning allows developers to track changes, revert to previous versions, and implement updates in a controlled and systematic manner. This is especially useful when you want to recall previous versions of your AI model's prompt templates, perhaps for debugging, comparison or to manage different versions of an AI. That's where the concept of "Promptstash" in AI Hero Python SDK comes into play.
+
+## Tutorials
+We have two tutorials for you:
+- [PromptOps with OpenAI's Completions API + PromptStash (Beginner)](examples/PromptOps_with_OpenAI_Completions_API_+_PromptStash_(Beginner).ipynb) - In this example tutorial, we'll use an LLM to do some English to Japanese translation for us so that we can talk to our friend in Japanese and look at the PromptOps associated with it. [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/ai-hero/python-client-sdk/blob/main/examples/PromptOps_with_OpenAI_Completions_API_%2B_PromptStash_%28Beginner%29.ipynb)
+
+- [PromptOps with OpenAI's Chat Completions API + PromptStash (Beginner)](examples/PromptOps_with_OpenAI_Chat_Completions_API_+_PromptStash_(Beginner).ipynb) - In this example tutorial, we'll use a LLM Chat Bot as a Japanese tutor for us so that we can learn Japanese through conversation and look at the PromptOps associated with it. [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/ai-hero/python-client-sdk/blob/main/examples/PromptOps_with_OpenAI_Chat_Completions_API_%2B_PromptStash_%28Beginner%29.ipynb)
