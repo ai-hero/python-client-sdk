@@ -402,21 +402,14 @@ class PromptStash:
             ),
         ).start()
 
-    def build_test_suite(
-        self, test_suite_id: str, test_suite_cls: type
-    ) -> PromptTestSuite:
+    def build_test_suite(self, test_suite_id: str) -> PromptTestSuite:
         """Build a test suite."""
         assert test_suite_id, "Please provide a test_suite_id"
         assert isinstance(test_suite_id, str), "test_suite_id must be a string"
         assert validators.slug(
             test_suite_id
         ), "test_suite_id should be a valid slug (i.e. '^[-a-zA-Z0-9_]+$')"
-
-        assert issubclass(
-            test_suite_cls, PromptTestSuite
-        ), "test_suite_cls must be a subclass of PromptTestSuite"
-
-        return test_suite_cls(
+        return PromptTestSuite(
             project_id=self._project_id,
             client=self._client,
             test_suite_id=test_suite_id,
