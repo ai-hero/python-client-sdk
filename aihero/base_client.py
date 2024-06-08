@@ -2,33 +2,34 @@
 from warnings import warn
 import os
 import httpx
-import validators
-from typing import Dict
+from typing import Any, Optional
 from .exceptions import AIHeroException
+import validators
+import traceback
 
-PRODUCTION_URL = "https://app.aihero.studio"
-SANDBOX_URL = "https://sandbox.aihero.studio"
+PRODUCTION_URL = "https://app.aihero.studio/"
+STAGING_URL = "https://staging.aihero.studio/"
 
 
-class Client:
+class BaseClient:
     """Abstraction for http operations"""
 
-    _base_url: str = None
-    _authorization: str = None
+    _base_url: Optional[str] = None
+    _authorization: Optional[str] = None
 
-    def __init__(self, bearer_token: str):
+    def __init__(self, api_key: str):
         server_url = os.environ.get("AI_HERO_SERVER_URL", PRODUCTION_URL)
-        assert bearer_token, "Please provide a bearer_token"
-        assert isinstance(bearer_token, str), "bearer_token should be a string."
+        assert api_key, "Please provide an api_key"
+        assert isinstance(api_key, str), "api_key should be a string."
         assert server_url, "Please provide a server_url"
         assert server_url in [
-            SANDBOX_URL,
+            STAGING_URL,
             PRODUCTION_URL,
         ], f"Server URL should be {PRODUCTION_URL}"
+        self._api_key = api_key
 
         # Assign to self
-        self._bearer_token = bearer_token
-        self._authorization = f"Bearer {self._bearer_token}"
+        self._authorization = f"Bearer {self._api_key}"
         self._base_url = server_url
 
         if server_url != PRODUCTION_URL:
@@ -49,7 +50,7 @@ class Client:
         self,
         path: str,
         error_msg: str = "Error",
-        network_errors: Dict[int, str] = None,
+        network_errors: Optional[dict[int, str]] = None,
         timeout: int = 30,
     ) -> dict:
         """Get request to AI Hero server"""
@@ -73,10 +74,11 @@ class Client:
         assert validators.url(f"{self._base_url}{path}"), f"Invalid path '{path}'"
 
         with httpx.Client(base_url=self._base_url, timeout=timeout) as client:
-            response = client.get(path, headers=self._get_headers())
             try:
+                response = client.get(path, headers=self._get_headers())
                 response.raise_for_status()
             except httpx.HTTPStatusError as exc:
+                traceback.print_exc()
                 msg = ""
                 if network_errors and exc.response.status_code in network_errors:
                     raise AIHeroException(
@@ -91,6 +93,7 @@ class Client:
                 else:
                     msg = error_msg
                 raise AIHeroException(msg) from exc
+            print(response)
             return response.json()
 
     def post(
@@ -98,7 +101,7 @@ class Client:
         path: str,
         obj: dict,
         error_msg: str = "Error",
-        network_errors: dict = None,
+        network_errors: Optional[dict[str, Any]] = None,
         timeout: int = 30,
     ) -> dict:
         """Post request to AI Hero server"""
