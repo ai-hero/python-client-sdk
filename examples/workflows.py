@@ -15,7 +15,7 @@ def main():
 
     project.list_workflows()
 
-    workflow_id = "57662519-dd45-4175-88cf-a23fe6a55b11"
+    workflow_id = "YOUR_WORKFLOW_ID"
     workflow = client.get_workflow(project_id=project_id, workflow_id=workflow_id)
 
     workflow.launch(verbose=True)
