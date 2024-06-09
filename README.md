@@ -14,7 +14,7 @@ In a folder for your project, create a file `.env` containing the following API 
 
 ```
 AI_HERO_PROJECT_ID=<Project ID from your project the AI Hero Website>
-AI_HERO_PROJECT_API_KEY=<API Key for the project>
+AI_HERO_API_KEY=<API Key for the project>
 ```
 
 ## Examples

@@ -93,7 +93,6 @@ class BaseClient:
                 else:
                     msg = error_msg
                 raise AIHeroException(msg) from exc
-            print(response)
             return response.json()
 
     def post(
@@ -101,7 +100,7 @@ class BaseClient:
         path: str,
         obj: dict,
         error_msg: str = "Error",
-        network_errors: Optional[dict[str, Any]] = None,
+        network_errors: Optional[dict[int, str]] = None,
         timeout: int = 30,
     ) -> dict:
         """Post request to AI Hero server"""

@@ -8,18 +8,15 @@ import validators
 class Project:
     """Main sync client class to talk to AI Hero"""
 
-    def __init__(self, project_id: str, api_key: str):
-        assert project_id, "Please provide a project_id"
-        assert validators.uuid(project_id), "project_id should be a valid UUID"
-        assert api_key, "Please provide an api_key"
-        assert isinstance(api_key, str), "api_key should be a string."
+    def __init__(self, project_id: str, base_client: BaseClient):
         self._project_id = project_id
-        self._client = BaseClient(api_key=api_key)
-        self.get()  # check
+        self._base_client = base_client
+        self.get()
+        assert self._dict
 
     def get(self, verbose: bool = False):
         """Get project details"""
-        project_dict = self._client.get(
+        self._dict = self._base_client.get(
             f"/projects/{self._project_id}",
             error_msg=f"Could fetch project details for project {self._project_id}",
             network_errors={
@@ -29,7 +26,21 @@ class Project:
             },
         )
         if verbose:
-            print(f"Project id:\t{project_dict['project_id']}")
-            print(f"Project name:\t{project_dict['name']}")
-            print(f"Project desc:\t{project_dict['description']}")
-            print(f"Created on:\t{project_dict['created_at']}")
+            print(f"Project id:\t{self._dict['project_id']}")
+            print(f"Project name:\t{self._dict['name']}")
+            print(f"Project desc:\t{self._dict['description']}")
+            print(f"Created on:\t{self._dict['created_at']}")
+
+        return self._dict
+
+    def list_workflows(self, verbose: bool = False):
+        """List all workflows in the project"""
+        workflows_list = self._base_client.get(
+            f"/projects/{self._project_id}/autonomous/workflows"
+        )["workflows"]
+        if verbose:
+            for workflow in workflows_list:
+                print(f"Workflow id:\t{workflow['workflow_id']}")
+                print(f"\tWorkflow name:\t{workflow['name']}")
+                print(f"\tWorkflow desc:\t{workflow['description']}")
+                print(f"\tCreated on:\t{workflow['created_at']}")
