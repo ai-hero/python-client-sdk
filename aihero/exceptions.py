@@ -1,10 +1,12 @@
 """Exceptions for AI Hero"""
 
+from typing import Optional
+
 
 class AIHeroException(Exception):
     """Generic AI Hero exception class"""
 
-    def __init__(self, message: str, status_code: int = None) -> Exception:
+    def __init__(self, message: str, status_code: Optional[int] = None):
         if not message:
             message = type(self).__name__
 
