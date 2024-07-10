@@ -237,6 +237,7 @@ class Client:
             error_msg=f"Could launch for workflow {workflow_id}",
             network_errors={
                 400: "Please check the workflow_id.",
+                402: "Insufficient credits to launch the workflow. Please contact team@aihero.studio.",
                 403: f"Could not get workflow {workflow_id}. Please check the API key.",
                 404: "Could not find the workflow.",
             },
